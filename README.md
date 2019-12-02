@@ -1,7 +1,7 @@
 # shiny
 
 This repository contains Shiny web app templates for visualizaling bioinformatic
-data analysis results. So far, I have designed two types of Shiny apps, which
+data analysis results. So far, there are two types of Shiny apps, which
 are described below:
 
 -   RNAseq viewer
