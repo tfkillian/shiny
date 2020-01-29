@@ -51,16 +51,48 @@
 ##' @param table a reactive output that captures the value of `inputx` to be
 ##' shown in the user interface
 
-## set libpath
-#.libPaths("/data/cbio/rlib/3.6") # comment out this line if not running on server
-.libPaths("~/R/x86_64-pc-linux-gnu-library/3.6") # local libpath
-
 ## load libraries
 library("DT")
 library("shiny")
 library("dplyr")
 library("tidyr")
 library("ggplot2")
+
+####################### set current directory variables ########################
+## The functions below streamline the variables that you must change between
+## running the app on local, and running the app on the cluster. You must update
+## the myDirectory path on the server every time you start a new project, and
+## the local path to library and results (if running on a local)
+## NOTE: the server MUST USE absolute paths NEVER USE relative paths!!!
+
+setLibs <- function(x) {
+    if (x == TRUE) {
+    ## path to R libaries on the server
+    myLib <- "/data/cbio/rlib/3.6" ## Never change this!!! 
+    } else {
+    ## path to R libaries on your local, change to reflect your local environment
+    myLib <- "~/R/x86_64-pc-linux-gnu-library/3.6"
+    }
+    return(myLib)
+}
+
+setPaths <- function(x) {
+    if (x == TRUE) {
+    ## this is the path to the DE results on the server
+    ## this will change from project to project, so change accordingly
+    myDirectory <- "/srv/shiny-private-server/cbio/test/results/"
+    } else {
+    ## this is the path to the DE results on your local
+    myDirectory <- "~/tmp/201910_FATH_RNA1/results/"    
+    }
+    return(myDirectory)
+}
+
+################################################################################
+#### if this is running on the server, change these functions to TRUE !!!!! ###
+myDirectory <- setPaths(TRUE)
+.libPaths(setLibs(TRUE))
+################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
 ## The function read_count_matrix() returns a count matrix dataframe with a new
@@ -69,40 +101,47 @@ library("ggplot2")
 ## have the following columns: `Gene`, `geneName`, `baseMean`, `log2FoldChange`,
 ## `pvalue`, `padj`, and at least 2 columns of normalized counts. The headers of
 ## the columns of the normalized counts must have some similar characters
-##
-## Example: df <- read_count_matrix("../results/name_of_count_matrix_file.tsv")
+## Example: df <- read_count_matrix(paste0(myDirectory, "results_file.rds"))
 
 read_count_matrix <- function(dds_df) {
         dds_df <- readRDS(dds_df) %>% as_tibble() %>% 
-        mutate(neg_log10_padj = -log10(padj)) %>% 
-            dplyr::select(-stat)
+        mutate(neg_log10_padj = -log10(padj)) %>% dplyr::select(-stat)
         return(dds_df)
 }
 
-# set current directory variable
-# myDirectory <- "/srv/shiny-private-server/cbio/201906_PHOS_DONA/"
-myDirectory <- "~/tmp/201910_FATH_RNA1/results/"
-
-## relative path on local machine
+## files to be read which need to correspond to your experimental comparisons ##
+## big results file (res object + normalized counts)
 dds_df_1 <- read_count_matrix(paste0(myDirectory, "res1_F_only_201910_FATH_RNA1.rds"))
 dds_df_2 <- read_count_matrix(paste0(myDirectory, "res1_H_only_201910_FATH_RNA1.rds"))
 dds_df_3 <- read_count_matrix(paste0(myDirectory, "res1_S_only_201910_FATH_RNA1.rds"))
 dds_df_4 <- read_count_matrix(paste0(myDirectory, "res1_pH_only_201910_FATH_RNA1.rds"))
 
-## absolute path on server
-# dds_df_1 <- read_count_matrix("/srv/shiny-private-server/cbio/201910_FATH_RNA1/results/res1_F_only_201910_FATH_RNA1.rds")
-# dds_df_2 <- read_count_matrix("/srv/shiny-private-server/cbio/201910_FATH_RNA1/results/res1_H_only_201910_FATH_RNA1.rds")
-# dds_df_3 <- read_count_matrix("/srv/shiny-private-server/cbio/201910_FATH_RNA1/results/res1_S_only_201910_FATH_RNA1.rds")
-# dds_df_4 <- read_count_matrix("/srv/shiny-private-server/cbio/201910_FATH_RNA1/results/res1_pH_only_201910_FATH_RNA1.rds")
+## saved colData
+col_1 <- readRDS(paste0(myDirectory, "col_1.rds"))
+col_2 <- readRDS(paste0(myDirectory, "col_2.rds"))
+col_3 <- readRDS(paste0(myDirectory, "col_3.rds"))
+col_4 <- readRDS(paste0(myDirectory, "col_4.rds"))
+
+## saved ggplot2 PCA
+pca_1 <- (paste0(myDirectory, "PCA1.png"))
+pca_2 <- (paste0(myDirectory, "PCA2.png"))
+pca_3 <- (paste0(myDirectory, "PCA3.png"))
+pca_4 <- (paste0(myDirectory, "PCA4.png"))
+
+## saved limma::goana GSEA results
+go_1 <- readRDS(paste0(myDirectory, "go_1.rds"))
+go_2 <- readRDS(paste0(myDirectory, "go_2.rds"))
+go_3 <- readRDS(paste0(myDirectory, "go_3.rds"))
+go_4 <- readRDS(paste0(myDirectory, "go_4.rds"))
 
 ############################ user interface ###################################
 # The string that appearing in the drop down menu and can be changed to the name
 # of whatever comparison is required, however "dds_df_1" should remain the name
-# of whatever the .tsv file is named
+# of whatever the .rds file is named
 
 ui <- shinyUI(fluidPage(
               titlePanel("Explore RNAseq Analysis with Shiny"),
-              mainPanel( ## sets what is the first panel
+              mainPanel(
               tabsetPanel(type = "tabs",
                           
               ########## first panel ##########
@@ -113,32 +152,53 @@ ui <- shinyUI(fluidPage(
                  RNAseq analysis was generated using a standard RNAseq pipeline including FastQC for the quality control of the
                  raw .fastq data, trimmomatic for trimming the adapters from the raw reads, hisat2 to align the trimmed reads and
                  htseq-count to produce the final count matrix from the aligned reads. Differential expression (DE) analysis was
-                 performed using tools from the DESeq2 Bioconductor package, analyzing the inferred transcriptional changes
-                 between test groups and producing various diagnostic plots. The results of the analysis are available as .tsv
+                 performed using tools from the DESeq2 Bioconductor package, analyzing the inferred transcriptional changes between
+                 test groups and producing various diagnostic plots. The results of the analysis are available as .rds and .tsv
                  files listing genes that are differentially expressed and sorted by significantly small p-adjusted values across
                  groups of samples. Lists of significantly expressed genes were taken from the DE results and used for gene set
                  enrichment using the limma::goana package."),
+              selectInput(inputId = "design",
+                          label = "Please choose comparison",
+                          choices = c("pH 6.5 vs 7.4 for F cells" = "col_1",
+                                      "pH 6.5 vs 7.4 for H cells" = "col_2",
+                                      "pH 6.5 vs 7.4 for S cells" = "col_3",
+                                      "pH 6.5 vs 7.4 for all cells" = "col_4")),
               ## first panel row 1
               fluidRow(
               column(width = 12,
-              h5("Kable of experimental design goes here")
-              ))))),
+              h4("Experimental design of selected comparison"),
+              # h5("Kable of experimental design goes here"),
+              DT::dataTableOutput("kable"))
+              )))),
               
               ########## second panel ##########
-              tabPanel(title = "Diagnostic Plots",
+              tabPanel(title = "PCA",
               fluidRow(column(width = 12,
-              h4("DESeq2 Bioconductor package analyzes the inferred transcriptional changes between test groups"),
+              h4("PCA is a method of visually identifying the similarity or difference between samples. PCA rotates the data cloud
+                 onto an orthagonal basis determined by the dimensions of maximal variance. The first two Principal Components (PCs)
+                 usually hold the majority of the variance of the data. The following plot shows the count matrix samples projected
+                 onto the two largest Principal Components (PC1 and PC2)."),
+              selectInput(inputId = "pca",
+                          label = "Please choose comparison",
+                          choices = c("pH 6.5 vs 7.4 for F cells" = "pca_1",
+                                      "pH 6.5 vs 7.4 for H cells" = "pca_2",
+                                      "pH 6.5 vs 7.4 for S cells" = "pca_3",
+                                      "pH 6.5 vs 7.4 for all cells" = "pca_4")
+              ),
               ## second panel row 1
               fluidRow(
-              column(width = 6,
-              h5("PCA goes here")),
-              column(width = 6,
-              h5("Dispersion plot goes here")
-              ))))),
+              column(width = 12,
+              h5("PCA of experimental comparison"),
+              plotOutput("image_1"),
+              align = "left")
+              # column(width = 6,
+              # h5("Dispersion plot goes here"))
+              )))),
               
               ########## third panel ##########              
               tabPanel("DE Analysis",
               h4("Interactive plots illustrating the results of the DESeq2 analysis "),
+              h5("This table showing results of the statistic analysis. Note: specific genes can be queried in the search bar."),
               selectInput(inputId = "comparison",
               label = "Please choose comparison",
               choices = c("pH 6.5 vs 7.4 for F cells" = "dds_df_1",
@@ -166,11 +226,10 @@ ui <- shinyUI(fluidPage(
               height = 350)),
               ## third panel row 2
               fluidRow(
-              column(width = 4,
-              h4("Results table"),
+              column(width = 12,
+              h4("DE results table"),
               h5("This table showing results of the statistic analysis. Note: specific genes can be queried in the search bar."),
               DT::dataTableOutput("table"),
-              offset = 1,
               align = "left")
               ))),
               
@@ -181,11 +240,18 @@ ui <- shinyUI(fluidPage(
               h4("Gene Set Enrichment Analysis (GSEA) was performed using limma::goana(). This process requires ENTREZ
               identifiers, which are obtained by querying the genome wide annotation for H. sapiens, as well as p-adjusted
               values. The enriched gene set is subjected to a hypergeometric test for differential enrichment."),
+              selectInput(inputId = "go",
+                          label = "Please choose comparison",
+                          choices = c("pH 6.5 vs 7.4 for F cells" = "go_1",
+                                      "pH 6.5 vs 7.4 for H cells" = "go_2",
+                                      "pH 6.5 vs 7.4 for S cells" = "go_3",
+                                      "pH 6.5 vs 7.4 for all cells" = "go_4")),
               ## fourth panel row 1
               fluidRow(
               column(width = 12,
-              h5("Table of GSEA results goes here"))
-              
+              h4("limma::goana results table"),
+              h5("This table showing results of the GO enrichment analysis. Note: specific GO terms can be queried in the search bar."),
+              DT::dataTableOutput("go_res"))
               )))
               )))
 ))
@@ -195,8 +261,8 @@ ui <- shinyUI(fluidPage(
 server <- function(input, output) {
     
 ##################### selecting dataset from dropdown menu #####################
-# gets the dropdown menu input for the dataset. NOTE: "dds_df_1" = dds_df_1 both
-# should be the name of the data table to be selected
+## gets the dropdown menu input for the dataset. NOTE: "dds_df_1" = dds_df_1
+## both should be the name of the data table to be selected
     
     selected_df <- reactive({switch(input$comparison, 
                                     "dds_df_1" = dds_df_1,
@@ -204,13 +270,13 @@ server <- function(input, output) {
                                     "dds_df_3" = dds_df_3,
                                     "dds_df_4" = dds_df_4
     )})
-        
-########## create reactive variable value() to select clicked object ###########
+
+########### create reactive variable value to select clicked object ############
 ## This reactive variable captures the row of the gene clicked which matches
 ## the selected dataframe. The initial value is set to 1, (i.e. the gene with
 ## most sig. padj score). The reactive value will be used to plot the count plot
 ## and highlight the clicked gene in blue in the other 2 plots automatically.
-## NOTE: nearPoints will select the nearest point to a click. threshold must be
+## NOTE: nearPoints will select the nearest point to a click. threshold MUST BE
 ## set to 1000 so app will not crash when user clicks far from a selected point!
         
     click_value <- reactiveVal(value = 1, label = 1)
@@ -244,7 +310,7 @@ server <- function(input, output) {
     ## if for some reason you want to know what the cursor is clicking on, this
     ## reactive variable will display the output of that
     # output$click_value <- renderText({click_value()})
-    
+
 #################### First plot (MA plot) ######################################
 ## This MA plot is generated automatically from dataset selected from dropdown,
 ## with threshold at padj < 0.05. Points meeting this threshold are shown in
@@ -285,7 +351,7 @@ server <- function(input, output) {
 ## row, showing the normalized counts of the selected gene for that comparison.
 ## NOTE: when updating with different dataframes, "E16" and "E18" should be
 ## changed to some part of character string of the header of the comparison
-## groups that are being compared.
+## groups that are being compared. If pseudocounts are desired, change to log1p
     
         output$plot_graph_3 <- renderPlot({ 
         as_tibble(selected_df()[click_value(), ]) %>% 
@@ -300,15 +366,36 @@ server <- function(input, output) {
         ggtitle(selected_df()[click_value(), ]$geneName)
     })
     
-########################## Plot datatable (DT) #################################
+########################## Plot datatable DE results ###########################
 ## this table is generated from the dataset selected from dropdown, showing
 ## variables Gene, geneName, baseMean, log2FoldChange, pvalue, padj (arranged by
 ## highest padj), and only one row can be selected at a time
     
     inputx <- reactive(get(input$comparison))
     output$table <- DT::renderDataTable(inputx() %>%
-    dplyr::select(-neg_log10_padj) %>%
-                  arrange(padj), selection = 'single')
-}
+    dplyr::select(-neg_log10_padj) %>% arrange(padj), selection = 'single')
 
+########################## Plot datatable experimental coldata #################
+## this table is generated from saving the experimental colData used in the dds
+## object. the columns will change from experiment to experiment
+
+    inputy <- reactive(get(input$design))
+    output$kable <- DT::renderDataTable(inputy())
+    
+########################## Plot datatable GO results ###########################
+## this table is generated from saving the limma::goana GO results
+    
+    inputz <- reactive(get(input$go))
+    output$go_res <- DT::renderDataTable(inputz())
+    
+########################## Plot datatable GO results ###########################
+## this table is generated from saving the limma::goana GO results
+    
+    inputq <- reactive(get(input$pca))
+    output$image_1 <- renderImage({
+        filename <- file.path(inputq())
+        list(src = filename, width = 800, height = 800)
+       }, deleteFile = FALSE)
+
+} ### nothing goes below this line EVER because shiny will throw an error!!! ###
 shinyApp(ui = ui, server = server)
