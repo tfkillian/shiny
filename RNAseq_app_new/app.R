@@ -1,13 +1,24 @@
-##' This shiny app allows RNAseq count matrix data analyzed by *DESeq2* to be
-##' visually explored. Different sample group comparisons resulting from the
-##' *DESeq2* analysis can be selected from the dropdown menu in the left side
-##' panel of the user interface. This app displays a *MA plot*, *Volcano plot*,
-##' a data table of results from the *DESeq2* analysis and a plot of normalized
-##' counts of a selected gene determined by user click input. The plots and
-##' table shown in the user interface are updated automatically with new user
-##' input.
+##' This shiny app allows count matrix data analyzed for differential expression
+##' to be visually explored. Different sample group comparisons resulting from
+##' the DE analysis can be selected from the dropdown menu in each tab of the
+##' user interface.
+##' 
+##' The first tab contains a description of the analysis and a table of
+##' experimental groups used in the differential expression analysis
+##' 
+##' The second tab contains a PCA displaying the projection of the experimental
+##' groups used in the differential expression analysis, projected onto the
+##' first two principal components.
+##' 
+##' The third tab displays a *MA plot*, *Volcano plot*, a data table of results
+##' from the DE analysis and a plot of normalized counts of a selected gene
+##' determined by user click input. The plots and table shown in the user
+##' interface are updated automatically with new user input.
+##' 
+##' The fourth tab displays results of the Gene Set Enrichment Analysis (GSEA)
+##' in an html table.
 ##'
-##' @title Interactive Shiny RNAseq DESeq2 Analysis Explorer
+##' @title Interactive Shiny Omics Analysis Explorer
 ##' 
 ##' @author Theo Killian
 ##' 
@@ -15,15 +26,19 @@
 ##'
 ##' @param dds_df_1 a tibble of an RNAseq DESeq2 analysis with normalized counts
 ##' 
-##' @param dds_df_2 a tibble of an RNAseq DESeq2 analysis with normalized counts
+##' @param "dds_df_1" a string corresponding to the name of the .rds file above
 ##' 
-##' @param dds_df_3 a tibble of an RNAseq DESeq2 analysis with normalized counts
+##' @param col_1 a dataframe of the coldata an RNAseq DESeq2 analysis
 ##' 
-##' @param "dds_df_1" a string corresponding to the name of the .rds file
+##' @param "col_1" a string corresponding to the name of the .rds file above
 ##' 
-##' @param "dds_df_2" a string corresponding to the name of the .rds file
+##' @param pca_1 a .png file of the PCA taken from the  RNAseq DESeq2 analysis
 ##' 
-##' @param "dds_df_3" a string corresponding to the name of the .rds file
+##' @param "pca_1" a string corresponding to the name of the .png file above
+##' 
+##' @param go_1 a dataframe of the GO enrichment of an RNAseq DESeq2 analysis
+##' 
+##' @param "go_1" a string corresponding to the name of the .rds file above
 ##' 
 ##' The following variables *must not be updated* when changing input files
 ##' 
@@ -45,11 +60,30 @@
 ##' 
 ##' @param plot_graph_3 reactive output for count plot that generates plot
 ##' 
-##' @param inputx a reactive variable that captures the dataframe selected from
-##' user input
+##' @param input_1 a reactive variable that selects the dropdown comparison user
+##' input used to display the coldata in table_1 on tab 1
 ##' 
-##' @param table a reactive output that captures the value of `inputx` to be
-##' shown in the user interface
+##' @param input_2 a reactive variable that selects the dropdown comparison user
+##' input used to display the PCA on tab 2
+##' 
+##' @param input_3 a reactive variable that selects the dropdown comparison user
+##' input used to display the DE results, Volcano Plot, MA Plot and results
+##' table_2 on tab 3
+##' 
+##' @param input_4 a reactive variable that selects the dropdown comparison user
+##' input used to display the GO enrichment in table_3 on tab 4
+##' 
+##' @param table_1 a reactive output that captures the value of `input_1` and
+##' selects which is the coldata dataframe corresponding to the experimental
+##' comparison found in the dropdown bar on tab 1
+##'
+##' @param table_2 a reactive output that captures the value of `input_3` and
+##' selects which is the DE result dataframe corresponding to the experimental
+##' comparison found in the dropdown bar on tab 3
+##' 
+##' @param table_3 a reactive output that captures the value of `input_4` to be
+##' selects which is the GO enrichment dataframe corresponding to the
+##' experimental comparison found in the dropdown bar on tab 4
 
 ## load libraries
 library("DT")
@@ -90,8 +124,8 @@ setPaths <- function(x) {
 
 ################################################################################
 #### if this is running on the server, change these functions to TRUE !!!!! ###
-myDirectory <- setPaths(TRUE)
-.libPaths(setLibs(TRUE))
+myDirectory <- setPaths(FALSE)
+.libPaths(setLibs(FALSE))
 ################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
@@ -122,7 +156,8 @@ col_2 <- readRDS(paste0(myDirectory, "col_2.rds"))
 col_3 <- readRDS(paste0(myDirectory, "col_3.rds"))
 col_4 <- readRDS(paste0(myDirectory, "col_4.rds"))
 
-## saved ggplot2 PCA
+## saved PCA png files
+## NOTE:: this MUST be the absolute path to work on the server
 pca_1 <- (paste0(myDirectory, "PCA1.png"))
 pca_2 <- (paste0(myDirectory, "PCA2.png"))
 pca_3 <- (paste0(myDirectory, "PCA3.png"))
@@ -135,6 +170,10 @@ go_3 <- readRDS(paste0(myDirectory, "go_3.rds"))
 go_4 <- readRDS(paste0(myDirectory, "go_4.rds"))
 
 ############################ user interface ###################################
+# this function defines the Shiny UI. new tabs can be added with tabPanel() and
+# new rows can be added with flowRow() within the tabs and new columns can be
+# added within the within rows with column(). For more info, see shiny tutorial
+# https://shiny.rstudio.com/tutorial/
 # The string that appearing in the drop down menu and can be changed to the name
 # of whatever comparison is required, however "dds_df_1" should remain the name
 # of whatever the .rds file is named
@@ -166,9 +205,8 @@ ui <- shinyUI(fluidPage(
               ## first panel row 1
               fluidRow(
               column(width = 12,
-              h4("Experimental design of selected comparison"),
-              # h5("Kable of experimental design goes here"),
-              DT::dataTableOutput("kable"))
+              h4("Experimental groups of selected DE comparison"),
+              DT::dataTableOutput("table_1"))
               )))),
               
               ########## second panel ##########
@@ -183,22 +221,18 @@ ui <- shinyUI(fluidPage(
                           choices = c("pH 6.5 vs 7.4 for F cells" = "pca_1",
                                       "pH 6.5 vs 7.4 for H cells" = "pca_2",
                                       "pH 6.5 vs 7.4 for S cells" = "pca_3",
-                                      "pH 6.5 vs 7.4 for all cells" = "pca_4")
-              ),
+                                      "pH 6.5 vs 7.4 for all cells" = "pca_4")),
               ## second panel row 1
               fluidRow(
               column(width = 12,
               h5("PCA of experimental comparison"),
               plotOutput("image_1"),
               align = "left")
-              # column(width = 6,
-              # h5("Dispersion plot goes here"))
               )))),
               
               ########## third panel ##########              
               tabPanel("DE Analysis",
               h4("Interactive plots illustrating the results of the DESeq2 analysis "),
-              h5("This table showing results of the statistic analysis. Note: specific genes can be queried in the search bar."),
               selectInput(inputId = "comparison",
               label = "Please choose comparison",
               choices = c("pH 6.5 vs 7.4 for F cells" = "dds_df_1",
@@ -209,13 +243,13 @@ ui <- shinyUI(fluidPage(
               fluidRow(
               column(width = 4,
               h4("MA Plot"),
-              h5("Threshold set at padj < 0.05"),
+              h5("Threshold (red) set at p-adjusted value < 0.05"),
               plotOutput("plot_graph_1",
                          click = "plot1_click",
                          height = 350)),
               column(width = 4,
               h4("Volcano Plot"),
-              h5("Threshold set at LFC > 1 & padj < 0.05"),
+              h5("Threshold (red) set at log2 fold change > 1 & p-adjusted value < 0.05"),
               plotOutput("plot_graph_2",
                          click = "plot2_click",
                          height = 350)),
@@ -228,8 +262,8 @@ ui <- shinyUI(fluidPage(
               fluidRow(
               column(width = 12,
               h4("DE results table"),
-              h5("This table showing results of the statistic analysis. Note: specific genes can be queried in the search bar."),
-              DT::dataTableOutput("table"),
+              h5("This table displays results of the statistic analysis. Note: specific genes can be queried in the search bar."),
+              DT::dataTableOutput("table_2"),
               align = "left")
               ))),
               
@@ -237,9 +271,12 @@ ui <- shinyUI(fluidPage(
               tabPanel(title = "Enrichment Analysis",
               fluidRow(
               column(width = 12,
-              h4("Gene Set Enrichment Analysis (GSEA) was performed using limma::goana(). This process requires ENTREZ
-              identifiers, which are obtained by querying the genome wide annotation for H. sapiens, as well as p-adjusted
-              values. The enriched gene set is subjected to a hypergeometric test for differential enrichment."),
+              h4("Gene Set Enrichment Analysis (GSEA) was performed using limma::goana(), which tests for over-representation of gene
+              ontology (GO) terms or KEGG pathways in one or more sets of genes. The enriched gene set is here defined as the set of all
+              genes resulting from the DE analysis that possess log2 fold change > 1 & p-adjusted value < 0.05. This enriched gene set is
+              subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe', which is defined as all genes
+              from the original count matrix that possess ENTREZ identifiers. Note: the p-value for over-representation of the GO or KEGG
+              terms in the set (P.DE) is not p-adjusted."),
               selectInput(inputId = "go",
                           label = "Please choose comparison",
                           choices = c("pH 6.5 vs 7.4 for F cells" = "go_1",
@@ -250,19 +287,23 @@ ui <- shinyUI(fluidPage(
               fluidRow(
               column(width = 12,
               h4("limma::goana results table"),
-              h5("This table showing results of the GO enrichment analysis. Note: specific GO terms can be queried in the search bar."),
-              DT::dataTableOutput("go_res"))
+              h5("This table displaying results of the GO enrichment analysis. Note: specific GO terms can be queried in the search bar."),
+              h5("Note: Term = GO term, Ont = ontology that the GO term belongs to (e.g. 'BP', 'CC' and 'MF'), N = number of genes in the GO term,
+                 DE = number of genes in the DE set, P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
+              DT::dataTableOutput("table_3"))
               )))
               )))
 ))
 
 ################################## server ######################################
-
+## this function defines the Shiny "server" all functions that the UI refers to
+## that involve reactive variables go here
 server <- function(input, output) {
     
 ##################### selecting dataset from dropdown menu #####################
-## gets the dropdown menu input for the dataset. NOTE: "dds_df_1" = dds_df_1
-## both should be the name of the data table to be selected
+## gets the dropdown menu input for the dataset plotted for the DE analysis tab
+## NOTE: "dds_df_1" = dds_df_1  both should be the name of the data table to be
+## selected correctly
     
     selected_df <- reactive({switch(input$comparison, 
                                     "dds_df_1" = dds_df_1,
@@ -278,20 +319,26 @@ server <- function(input, output) {
 ## and highlight the clicked gene in blue in the other 2 plots automatically.
 ## NOTE: nearPoints will select the nearest point to a click. threshold MUST BE
 ## set to 1000 so app will not crash when user clicks far from a selected point!
-        
+     
+    ## reactive click variable used to    
     click_value <- reactiveVal(value = 1, label = 1)
- 
+    
+    ## this reactive function records clicks on the MA plot 
     observeEvent(input$plot1_click, ignoreNULL = TRUE, {
                  point_gene <- nearPoints(selected_df(), input$plot1_click, threshold = 1000)
+                 ## if your data doesn't have "genes" this needs to be some sort
+                 ## of unique ID like UNIPROT or PEPTIDE ID
                  newValue <- which(grepl(point_gene$Gene, selected_df()$Gene))
                  if(is.null(newValue)) {
                  click_value(1) 
                  } else {
                  click_value(newValue)     
                  }})
-    
+    ## this reactive function records clicks on the Volcano plot 
     observeEvent(input$plot2_click, ignoreNULL = TRUE, {
                  point_gene <- nearPoints(selected_df(), input$plot2_click, threshold = 1000)
+                 ## if your data doesn't have "genes" this needs to be some sort
+                 ## of unique ID like UNIPROT or PEPTIDE ID
                  newValue <- which(grepl(point_gene$Gene, selected_df()$Gene))
                  if(is.null(newValue)) {
                  click_value(1)
@@ -299,6 +346,7 @@ server <- function(input, output) {
                  click_value(newValue)
                  }})
     
+    ## this reactive function records clicks a row of the results 
     observeEvent(input$table_rows_selected, ignoreNULL = TRUE, {
                  newValue <-  input$table_rows_selected
                  if(is.null(newValue)) {
@@ -349,7 +397,7 @@ server <- function(input, output) {
 ######################### Third plot (Count plot) ##############################
 ## This plot is generated from user clicks on the other two plots or data table
 ## row, showing the normalized counts of the selected gene for that comparison.
-## NOTE: when updating with different dataframes, "E16" and "E18" should be
+## NOTE: when updating with different dataframes, these names should be
 ## changed to some part of character string of the header of the comparison
 ## groups that are being compared. If pseudocounts are desired, change to log1p
     
@@ -365,37 +413,42 @@ server <- function(input, output) {
         geom_bar(stat = "identity") +
         ggtitle(selected_df()[click_value(), ]$geneName)
     })
+
+########################## Plot datatable experimental coldata #################
+## this table is generated from saving the experimental colData used in the dds
+## object. the columns will change from experiment to experiment
+    
+    input_1 <- reactive(get(input$design))
+    output$table_1 <- DT::renderDataTable(input_1())    
+
+########################## Display saved PCA.png files #########################
+## this function reads file paths of pre-generated PCA ggplots from the DE
+## analysis. Note, that this function reads file PATHS, not files! These file
+## paths MUST BE absolute paths
+    
+    input_2 <- reactive(get(input$pca))
+    output$image_1 <- renderImage({
+        filename <- file.path(input_2())
+        list(src = filename, width = 800, height = 800)
+    }, deleteFile = FALSE)    
     
 ########################## Plot datatable DE results ###########################
 ## this table is generated from the dataset selected from dropdown, showing
 ## variables Gene, geneName, baseMean, log2FoldChange, pvalue, padj (arranged by
 ## highest padj), and only one row can be selected at a time
+## NOTE: "selection = 'single'" means that only one row can be selected. this
+## app does not currently support selecting multiple rows
     
-    inputx <- reactive(get(input$comparison))
-    output$table <- DT::renderDataTable(inputx() %>%
+    input_3 <- reactive(get(input$comparison))
+    output$table_2 <- DT::renderDataTable(input_3() %>%
     dplyr::select(-neg_log10_padj) %>% arrange(padj), selection = 'single')
 
-########################## Plot datatable experimental coldata #################
-## this table is generated from saving the experimental colData used in the dds
-## object. the columns will change from experiment to experiment
-
-    inputy <- reactive(get(input$design))
-    output$kable <- DT::renderDataTable(inputy())
-    
 ########################## Plot datatable GO results ###########################
-## this table is generated from saving the limma::goana GO results
+## this table is generated from a saved dataframes displaying the limma::goana
+## GO enrichment results
     
-    inputz <- reactive(get(input$go))
-    output$go_res <- DT::renderDataTable(inputz())
-    
-########################## Plot datatable GO results ###########################
-## this table is generated from saving the limma::goana GO results
-    
-    inputq <- reactive(get(input$pca))
-    output$image_1 <- renderImage({
-        filename <- file.path(inputq())
-        list(src = filename, width = 800, height = 800)
-       }, deleteFile = FALSE)
+    input_4 <- reactive(get(input$go))
+    output$table_3 <- DT::renderDataTable(input_4())
 
-} ### nothing goes below this line EVER because shiny will throw an error!!! ###
+} ### nothing EVER goes below this line because shiny will throw an error!!! ###
 shinyApp(ui = ui, server = server)
