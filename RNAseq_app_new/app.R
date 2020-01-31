@@ -441,7 +441,9 @@ server <- function(input, output) {
     
     input_3 <- reactive(get(input$comparison))
     output$table_2 <- DT::renderDataTable(input_3() %>%
-    dplyr::select(-neg_log10_padj) %>% arrange(padj), selection = 'single')
+                      dplyr::select(-neg_log10_padj) %>%
+                      # mutate_at(3:5, round, 3) %>%
+                      arrange(padj), selection = 'single')
 
 ########################## Plot datatable GO results ###########################
 ## this table is generated from a saved dataframes displaying the limma::goana
