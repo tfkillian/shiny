@@ -391,7 +391,7 @@ server <- function(input, output) {
             geom_point(data = selected_df()[click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
             xlab("log2 fold change") + ylab("-log10 p-value") +
             theme(plot.title = element_text(hjust = 0.5))
-        vol + scale_color_manual(values=c("#000000", "#FF0000"))
+        vol + scale_color_manual(values = c("#000000", "#FF0000"))
     })
     
 ######################### Third plot (Count plot) ##############################
@@ -443,6 +443,7 @@ server <- function(input, output) {
     output$table_2 <- DT::renderDataTable(input_3() %>%
                       dplyr::select(-neg_log10_padj) %>%
                       # mutate_at(3:5, round, 3) %>%
+                      # mutate_at(8:last_col(), round, 3) %>%
                       arrange(padj), selection = 'single')
 
 ########################## Plot datatable GO results ###########################
