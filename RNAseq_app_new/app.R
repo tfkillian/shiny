@@ -120,7 +120,7 @@ serv_res <- "/srv/shiny-private-server/cbio/test/results/"
 ## this is the path to the DE results on your local
 loc_res <- "~/tmp/201910_FATH_RNA1/results/"  
 
-## This function switches libraries 
+## This function switches R libraries 
 setLibs <- function(x) {
     if (x == TRUE) {
     my_lib <- serv_lib
@@ -130,6 +130,7 @@ setLibs <- function(x) {
     return(my_lib)
 }
 
+## This function switches directory paths for results
 setPaths <- function(x) {
     if (x == TRUE) {
     my_directory <- serv_res
@@ -142,8 +143,8 @@ setPaths <- function(x) {
 ################################################################################
 #### if this is running on the server, change these functions to TRUE !!!!! ####
 ### if this is running on a local machine, then set these functions to FALSE ###
-myDirectory <- setPaths(FALSE)
-.libPaths(setLibs(FALSE))
+myDirectory <- setPaths(TRUE)
+.libPaths(setLibs(TRUE))
 ################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
