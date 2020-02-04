@@ -132,9 +132,9 @@ setLibs <- function(x) {
 
 setPaths <- function(x) {
     if (x == TRUE) {
-    my_directory <- serv_lib
+    my_directory <- serv_res
     } else {
-    my_directory <- loc_lib    
+    my_directory <- loc_res   
     }
     return(my_directory)
 }
