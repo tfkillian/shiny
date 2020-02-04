@@ -40,6 +40,14 @@
 ##' 
 ##' @param "go_1" a string corresponding to the name of the .rds file above
 ##' 
+##' @param serv_lib path to R libaries on the server
+##' 
+##' @param loc_lib path to R libaries on your local
+##' 
+##' @param serv_res this is the path to the DE results on the server
+##' 
+##' @param loc_res this is the path to the DE results on your local
+##' 
 ##' The following variables *must not be updated* when changing input files
 ##' 
 ##' @param click_value reactive variable that matches click user input with the
@@ -84,6 +92,7 @@
 ##' @param table_3 a reactive output that captures the value of `input_4` to be
 ##' selects which is the GO enrichment dataframe corresponding to the
 ##' experimental comparison found in the dropdown bar on tab 4
+##' 
 
 ## load libraries
 library("DT")
@@ -95,35 +104,44 @@ library("ggplot2")
 ####################### set current directory variables ########################
 ## The functions below streamline the variables that you must change between
 ## running the app on local, and running the app on the cluster. You must update
-## the myDirectory path on the server every time you start a new project, and
+## the `my_directory` path on the server every time you start a new project, and
 ## the local path to library and results (if running on a local)
 ## NOTE: the server MUST USE absolute paths NEVER USE relative paths!!!
 
+## path to R libaries on the server
+serv_lib <- "/data/cbio/rlib/3.6"
+
+## path to R libaries on your local
+loc_lib <- "~/R/x86_64-pc-linux-gnu-library/3.6"
+
+## this is the path to the DE results on the server
+serv_res <- "/srv/shiny-private-server/cbio/test/results/"
+
+## this is the path to the DE results on your local
+loc_res <- "~/tmp/201910_FATH_RNA1/results/"  
+
+## This function switches libraries 
 setLibs <- function(x) {
     if (x == TRUE) {
-    ## path to R libaries on the server
-    myLib <- "/data/cbio/rlib/3.6" ## Never change this!!! 
+    my_lib <- serv_lib
     } else {
-    ## path to R libaries on your local, change to reflect your local environment
-    myLib <- "~/R/x86_64-pc-linux-gnu-library/3.6"
+    my_lib <- loc_lib
     }
-    return(myLib)
+    return(my_lib)
 }
 
 setPaths <- function(x) {
     if (x == TRUE) {
-    ## this is the path to the DE results on the server
-    ## this will change from project to project, so change accordingly
-    myDirectory <- "/srv/shiny-private-server/cbio/test/results/"
+    my_directory <- serv_lib
     } else {
-    ## this is the path to the DE results on your local
-    myDirectory <- "~/tmp/201910_FATH_RNA1/results/"    
+    my_directory <- loc_lib    
     }
-    return(myDirectory)
+    return(my_directory)
 }
 
 ################################################################################
-#### if this is running on the server, change these functions to TRUE !!!!! ###
+#### if this is running on the server, change these functions to TRUE !!!!! ####
+### if this is running on a local machine, then set these functions to FALSE ###
 myDirectory <- setPaths(FALSE)
 .libPaths(setLibs(FALSE))
 ################################################################################
