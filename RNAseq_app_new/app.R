@@ -48,6 +48,16 @@
 ##' 
 ##' @param loc_res this is the path to the DE results on your local
 ##' 
+##' @param l2FC log2 fold change threshold
+##' 
+##' @param thresh_padj p-adjusted value threshold
+##' 
+##' @param proj_name project name
+##' 
+##' @param thresh_ma MA threshold
+##' 
+##' @param thresh_vol Volcano/Gene Enrichment threshold
+##' 
 ##' The following variables *must not be updated* when changing input files
 ##' 
 ##' @param click_value reactive variable that matches click user input with the
@@ -92,7 +102,6 @@
 ##' @param table_3 a reactive output that captures the value of `input_4` to be
 ##' selects which is the GO enrichment dataframe corresponding to the
 ##' experimental comparison found in the dropdown bar on tab 4
-##' 
 
 ## load libraries
 library("DT")
@@ -108,6 +117,22 @@ library("ggplot2")
 ## the local path to library and results (if running on a local)
 ## NOTE: the server MUST USE absolute paths NEVER USE relative paths!!!
 
+## define log2 fold change threshold
+l2FC <- 1
+
+## define p-adjusted value threshold
+thresh_padj <- 0.05
+
+## project name
+proj_name <- "2020XX_XXXX_XXXX"
+
+## MA threshold
+thresh_ma <- paste0("Threshold set at p-adjusted value < ", thresh_padj)
+
+## Volcano/Gene Enrichment threshold
+thresh_vol <- paste0("Threshold set at log2 fold change > ", l2FC,
+                     " & p-adjusted value < ", thresh_padj)
+
 ## path to R libaries on the server
 serv_lib <- "/data/cbio/rlib/3.6"
 
@@ -118,7 +143,7 @@ loc_lib <- "~/R/x86_64-pc-linux-gnu-library/3.6"
 serv_res <- "/srv/shiny-private-server/cbio/test/results/"
 
 ## this is the path to the DE results on your local
-loc_res <- "~/tmp/201910_FATH_RNA1/results/"  
+loc_res <- "~/tmp/shiny/results/"  
 
 ## This function switches R libraries 
 setLibs <- function(x) {
@@ -143,8 +168,8 @@ setPaths <- function(x) {
 ################################################################################
 #### if this is running on the server, change these functions to TRUE !!!!! ####
 ### if this is running on a local machine, then set these functions to FALSE ###
-myDirectory <- setPaths(TRUE)
-.libPaths(setLibs(TRUE))
+myDirectory <- setPaths(FALSE)
+.libPaths(setLibs(FALSE))
 ################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
@@ -158,29 +183,23 @@ myDirectory <- setPaths(TRUE)
 
 read_count_matrix <- function(dds_df) {
         dds_df <- readRDS(dds_df) %>% as_tibble() %>% 
-        mutate(neg_log10_padj = -log10(padj)) %>% dplyr::select(-stat)
+        mutate(neg_log10_padj = -log10(padj))
         return(dds_df)
 }
 
 ## files to be read which need to correspond to your experimental comparisons ##
 ## big results file (res object + normalized counts)
-dds_df_1 <- read_count_matrix(paste0(myDirectory, "res1_F_only_201910_FATH_RNA1.rds"))
-dds_df_2 <- read_count_matrix(paste0(myDirectory, "res1_H_only_201910_FATH_RNA1.rds"))
-dds_df_3 <- read_count_matrix(paste0(myDirectory, "res1_S_only_201910_FATH_RNA1.rds"))
-dds_df_4 <- read_count_matrix(paste0(myDirectory, "res1_pH_only_201910_FATH_RNA1.rds"))
+dds_df_1 <- read_count_matrix(paste0(myDirectory, "res1.rds"))
+dds_df_2 <- read_count_matrix(paste0(myDirectory, "res2.rds"))
+dds_df_3 <- read_count_matrix(paste0(myDirectory, "res3.rds"))
+dds_df_4 <- read_count_matrix(paste0(myDirectory, "res4.rds"))
 
 ## saved colData
-col_1 <- readRDS(paste0(myDirectory, "col_1.rds"))
-col_2 <- readRDS(paste0(myDirectory, "col_2.rds"))
-col_3 <- readRDS(paste0(myDirectory, "col_3.rds"))
-col_4 <- readRDS(paste0(myDirectory, "col_4.rds"))
+col_1 <- readRDS(paste0(myDirectory, "col_4.rds"))
 
 ## saved PCA png files
 ## NOTE:: this MUST be the absolute path to work on the server
-pca_1 <- (paste0(myDirectory, "PCA1.png"))
-pca_2 <- (paste0(myDirectory, "PCA2.png"))
-pca_3 <- (paste0(myDirectory, "PCA3.png"))
-pca_4 <- (paste0(myDirectory, "PCA4.png"))
+pca_1 <- (paste0(myDirectory, "PCA4.png"))
 
 ## saved limma::goana GSEA results
 go_1 <- readRDS(paste0(myDirectory, "go_1.rds"))
@@ -206,7 +225,7 @@ ui <- shinyUI(fluidPage(
               tabPanel(title = "Description",
               fluidRow(
               column(width = 12,
-              h4("This report describes an RNAseq analysis of the 2020XX_XXXX data. The count matrix file analyzed in this
+              h4(paste0("This report describes an RNAseq analysis of the ", proj_name, " data. The count matrix file analyzed in this
                  RNAseq analysis was generated using a standard RNAseq pipeline including FastQC for the quality control of the
                  raw .fastq data, trimmomatic for trimming the adapters from the raw reads, hisat2 to align the trimmed reads and
                  htseq-count to produce the final count matrix from the aligned reads. Differential expression (DE) analysis was
@@ -214,13 +233,13 @@ ui <- shinyUI(fluidPage(
                  test groups and producing various diagnostic plots. The results of the analysis are available as .rds and .tsv
                  files listing genes that are differentially expressed and sorted by significantly small p-adjusted values across
                  groups of samples. Lists of significantly expressed genes were taken from the DE results and used for gene set
-                 enrichment using the limma::goana package."),
-              selectInput(inputId = "design",
-                          label = "Please choose comparison",
-                          choices = c("pH 6.5 vs 7.4 for F cells" = "col_1",
-                                      "pH 6.5 vs 7.4 for H cells" = "col_2",
-                                      "pH 6.5 vs 7.4 for S cells" = "col_3",
-                                      "pH 6.5 vs 7.4 for all cells" = "col_4")),
+                 enrichment using the limma::goana package.")),
+              # selectInput(inputId = "design",
+              #             label = "Please choose comparison",
+              #             choices = c("Comparison 1" = "col_1",
+              #                         "Comparison 2" = "col_2",
+              #                         "Comparison 3" = "col_3",
+              #                         "Comparison 4" = "col_4")),
               ## first panel row 1
               fluidRow(
               column(width = 12,
@@ -235,12 +254,12 @@ ui <- shinyUI(fluidPage(
                  onto an orthagonal basis determined by the dimensions of maximal variance. The first two Principal Components (PCs)
                  usually hold the majority of the variance of the data. The following plot shows the count matrix samples projected
                  onto the two largest Principal Components (PC1 and PC2)."),
-              selectInput(inputId = "pca",
-                          label = "Please choose comparison",
-                          choices = c("pH 6.5 vs 7.4 for F cells" = "pca_1",
-                                      "pH 6.5 vs 7.4 for H cells" = "pca_2",
-                                      "pH 6.5 vs 7.4 for S cells" = "pca_3",
-                                      "pH 6.5 vs 7.4 for all cells" = "pca_4")),
+              # selectInput(inputId = "pca",
+              #             label = "Please choose comparison",
+              #             choices = c("pH 6.5 vs 7.4 for F cells" = "pca_1",
+              #                         "pH 6.5 vs 7.4 for H cells" = "pca_2",
+              #                         "pH 6.5 vs 7.4 for S cells" = "pca_3",
+              #                         "pH 6.5 vs 7.4 for all cells" = "pca_4")),
               ## second panel row 1
               fluidRow(
               column(width = 12,
@@ -251,24 +270,24 @@ ui <- shinyUI(fluidPage(
               
               ########## third panel ##########              
               tabPanel("DE Analysis",
-              h4("Interactive plots illustrating the results of the DESeq2 analysis "),
+              h4(paste0("Interactive plots illustrating the results of the DESeq2 analysis of the ", proj_name, " data")),
               selectInput(inputId = "comparison",
               label = "Please choose comparison",
-              choices = c("pH 6.5 vs 7.4 for F cells" = "dds_df_1",
-                          "pH 6.5 vs 7.4 for H cells" = "dds_df_2",
-                          "pH 6.5 vs 7.4 for S cells" = "dds_df_3",
-                          "pH 6.5 vs 7.4 for all cells" = "dds_df_4")),
+              choices = c("Comparison 1" = "dds_df_1",
+                          "Comparison 2" = "dds_df_2",
+                          "Comparison 3" = "dds_df_3",
+                          "Comparison 4" = "dds_df_4")),
               ## third panel row 1
               fluidRow(
               column(width = 4,
               h4("MA Plot"),
-              h5("Threshold (red) set at p-adjusted value < 0.05"),
+              h5(paste0(thresh_ma)),
               plotOutput("plot_graph_1",
                          click = "plot1_click",
                          height = 350)),
               column(width = 4,
               h4("Volcano Plot"),
-              h5("Threshold (red) set at log2 fold change > 1 & p-adjusted value < 0.05"),
+              h5(paste0(thresh_vol)),
               plotOutput("plot_graph_2",
                          click = "plot2_click",
                          height = 350)),
@@ -287,30 +306,50 @@ ui <- shinyUI(fluidPage(
               ))),
               
               ########## fourth panel ##########
-              tabPanel(title = "Enrichment Analysis",
+              tabPanel(title = "GO Term Enrichment Analysis",
               fluidRow(
               column(width = 12,
-              h4("Gene Set Enrichment Analysis (GSEA) was performed using limma::goana(), which tests for over-representation of gene
-              ontology (GO) terms or KEGG pathways in one or more sets of genes. The enriched gene set is here defined as the set of all
-              genes resulting from the DE analysis that possess log2 fold change > 1 & p-adjusted value < 0.05. This enriched gene set is
-              subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe', which is defined as all genes
-              from the original count matrix that possess ENTREZ identifiers. Note: the p-value for over-representation of the GO or KEGG
-              terms in the set (P.DE) is not p-adjusted."),
+              h4(paste0("GO Enrichment Analysis was performed using limma::goana(), which tests for over-representation of gene
+                 ontology (GO) terms for specified enriched sets of genes. The Enriched Gene Set ", thresh_vol, " This enriched gene set is
+                 subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe', which is defined as all genes
+                 from the original count matrix that possess ENTREZ identifiers.")),
               selectInput(inputId = "go",
                           label = "Please choose comparison",
-                          choices = c("pH 6.5 vs 7.4 for F cells" = "go_1",
-                                      "pH 6.5 vs 7.4 for H cells" = "go_2",
-                                      "pH 6.5 vs 7.4 for S cells" = "go_3",
-                                      "pH 6.5 vs 7.4 for all cells" = "go_4")),
+                          choices = c("Comparison 1" = "go_1",
+                                      "Comparison 2" = "go_2",
+                                      "Comparison 3" = "go_3",
+                                      "Comparison 4" = "go_4")),
               ## fourth panel row 1
               fluidRow(
               column(width = 12,
               h4("limma::goana results table"),
-              h5("This table displaying results of the GO enrichment analysis. Note: specific GO terms can be queried in the search bar."),
+              h5("This table displaying results of the GO term enrichment analysis. Note: specific GO terms can be queried in the search bar."),
               h5("Note: Term = GO term, Ont = ontology that the GO term belongs to (e.g. 'BP', 'CC' and 'MF'), N = number of genes in the GO term,
                  DE = number of genes in the DE set, P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
               DT::dataTableOutput("table_3"))
-              )))
+              )))  #,
+              
+              # ########## fifth panel ##########
+              # tabPanel(title = "KEGG Pathway Enrichment Analysis",
+              # fluidRow(
+              # column(width = 12,
+              # h4(paste0("KEGG Pathway Enrichment Analysis was performed using limma::kegga(), which tests for over-representation of KEGG pathways in one or more sets of genes.
+              #    The Enriched Gene Set ", thresh_vol, " This enriched gene  set is subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe',
+              #    which is defined as all genes from the original count matrix that possess ENTREZ identifiers.")),
+              # selectInput(inputId = "kegg",
+              #             label = "Please choose comparison",
+              #             choices = c("Comparison 1" = "kegg_1",
+              #                         "Comparison 2" = "kegg_2",
+              #                         "Comparison 3" = "kegg_3",
+              #                         "Comparison 4" = "kegg_4")),
+              # ## fifth panel row 1
+              # fluidRow(
+              # column(width = 12,
+              # h4("limma::kegga results table"),
+              # h5("This table displaying results of the KEGG pathway enrichment analysis. Note: specific KEGG pathways can be queried in the search bar."),
+              # DT::dataTableOutput("table_4"))
+              #                     ))),
+              # 
               )))
 ))
 
@@ -374,8 +413,8 @@ server <- function(input, output) {
                  click_value(newValue)
                  }})
     
-    ## if for some reason you want to know what the cursor is clicking on, this
-    ## reactive variable will display the output of that
+    ## if for some reason you want to know the value of what the cursor is
+    ## clicking on, this reactive variable will display the output of that
     # output$click_value <- renderText({click_value()})
 
 #################### First plot (MA plot) ######################################
@@ -386,13 +425,13 @@ server <- function(input, output) {
     
     output$plot_graph_1 <- renderPlot({
         ggplot(selected_df(), aes(x = baseMean, y = log2FoldChange)) +
-            geom_point(aes(colour = padj < 0.05), size = 0.5) +
-            geom_point(data = selected_df()[click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
-            scale_colour_manual(name = 'padj < 0.05', values = setNames(c('red', 'black'), c(TRUE, FALSE))) +
-            scale_x_continuous(trans = "log10", limits = c(0.1, 300000)) +
-            geom_smooth(colour = "red") +
-            geom_abline(slope = 0,intercept = 0, colour = "blue") +
-            theme(plot.title = element_text(hjust = 0.5))
+        geom_point(aes(colour = padj < thresh_padj), size = 0.5) +
+        geom_point(data = selected_df()[click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
+        scale_colour_manual(name = paste0('padj < ', thresh_padj), values = setNames(c('red', 'black'), c(TRUE, FALSE))) +
+        scale_x_continuous(trans = "log10", limits = c(0.1, 300000)) +
+        geom_smooth(colour = "red") +
+        geom_abline(slope = 0,intercept = 0, colour = "blue") +
+        theme(plot.title = element_text(hjust = 0.5))
     })
     
 ##################### Second plot (Volcano plot) ###############################
@@ -404,12 +443,12 @@ server <- function(input, output) {
     
     output$plot_graph_2 <- renderPlot({ 
         res_df <- as.data.frame(selected_df(), na.rm = TRUE)
-        res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > 1 & res_df$padj < 0.05)
+        res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
         vol <- ggplot(data = res_df, aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
-            geom_point(size = 0.5) +
-            geom_point(data = selected_df()[click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
-            xlab("log2 fold change") + ylab("-log10 p-value") +
-            theme(plot.title = element_text(hjust = 0.5))
+               geom_point(size = 0.5) +
+               geom_point(data = selected_df()[click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
+               xlab("log2 fold change") + ylab("-log10 p-value") +
+               theme(plot.title = element_text(hjust = 0.5))
         vol + scale_color_manual(values = c("#000000", "#FF0000"))
     })
     
@@ -419,37 +458,48 @@ server <- function(input, output) {
 ## NOTE: when updating with different dataframes, these names should be
 ## changed to some part of character string of the header of the comparison
 ## groups that are being compared. If pseudocounts are desired, change to log1p
-    
+
         output$plot_graph_3 <- renderPlot({ 
         as_tibble(selected_df()[click_value(), ]) %>% 
         dplyr::select(Gene, geneName,
-                      starts_with("F651"), starts_with("H651"), starts_with("S651"),
-                      starts_with("F652"), starts_with("H652"), starts_with("S652"),
-                      starts_with("F743"), starts_with("H743"), starts_with("S743")) %>%
+                      starts_with("F65"), starts_with("H65"), starts_with("S65"),
+                      starts_with("F74"), starts_with("H74"), starts_with("S74")) %>%
         head(1) %>% tidyr::gather(sample, counts, -c(Gene, geneName)) %>%
         mutate(group = substr(sample, 1, 4)) %>% 
-        ggplot(aes(x = group, y = log1p(counts), fill = group)) +
-        geom_bar(stat = "identity") +
+        ggplot(aes(x = group, y = log1p(counts), color = group)) +
+        geom_point(size = 3) +
         ggtitle(selected_df()[click_value(), ]$geneName)
     })
+    
 
 ########################## Plot datatable experimental coldata #################
 ## this table is generated from saving the experimental colData used in the dds
 ## object. the columns will change from experiment to experiment
     
-    input_1 <- reactive(get(input$design))
-    output$table_1 <- DT::renderDataTable(input_1())    
+    ## if interative
+    # input_1 <- reactive(get(input$design))
+    # output$table_1 <- DT::renderDataTable(input_1())
+    
+    ## if not interactive
+    output$table_1 <- DT::renderDataTable(col_1)
 
 ########################## Display saved PCA.png files #########################
 ## this function reads file paths of pre-generated PCA ggplots from the DE
 ## analysis. Note, that this function reads file PATHS, not files! These file
 ## paths MUST BE absolute paths
     
-    input_2 <- reactive(get(input$pca))
+    ## if interactive
+    # input_2 <- reactive(get(input$pca))
+    # output$image_1 <- renderImage({
+    #     filename <- file.path(input_2())
+    #     list(src = filename, width = 800, height = 800)
+    # }, deleteFile = FALSE)    
+    
+    ## if not interactive
     output$image_1 <- renderImage({
-        filename <- file.path(input_2())
+        filename <- file.path(pca_1)
         list(src = filename, width = 800, height = 800)
-    }, deleteFile = FALSE)    
+    }, deleteFile = FALSE) 
     
 ########################## Plot datatable DE results ###########################
 ## this table is generated from the dataset selected from dropdown, showing
@@ -471,6 +521,13 @@ server <- function(input, output) {
     
     input_4 <- reactive(get(input$go))
     output$table_3 <- DT::renderDataTable(input_4())
+    
+########################## Plot datatable KEGG results #########################
+## this table is generated from a saved dataframes displaying the limma::kegga
+## KEGG enrichment results
+    
+    # input_5 <- reactive(get(input$kegg))
+    # output$table_4 <- DT::renderDataTable(input_5())
 
 } ### nothing EVER goes below this line because shiny will throw an error!!! ###
 shinyApp(ui = ui, server = server)
