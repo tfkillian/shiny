@@ -140,9 +140,11 @@ serv_lib <- "/data/cbio/rlib/3.6"
 loc_lib <- "~/R/x86_64-pc-linux-gnu-library/3.6"
 
 ## this is the path to the DE results on the server
+# serv_res <- paste0("/srv/shiny-private-server/cbio/", proj_name, "/results/")
 serv_res <- "/srv/shiny-private-server/cbio/test/results/"
 
 ## this is the path to the DE results on your local
+# loc_res <- paste0("~/tmp/", proj_name, "/results/")
 loc_res <- "~/tmp/shiny/results/"  
 
 ## This function switches R libraries 
@@ -168,8 +170,8 @@ setPaths <- function(x) {
 ################################################################################
 #### if this is running on the server, change these functions to TRUE !!!!! ####
 ### if this is running on a local machine, then set these functions to FALSE ###
-myDirectory <- setPaths(FALSE)
-.libPaths(setLibs(FALSE))
+myDirectory <- setPaths(TRUE)
+.libPaths(setLibs(TRUE))
 ################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
@@ -201,11 +203,17 @@ col_1 <- readRDS(paste0(myDirectory, "col_4.rds"))
 ## NOTE:: this MUST be the absolute path to work on the server
 pca_1 <- (paste0(myDirectory, "PCA4.png"))
 
-## saved limma::goana GSEA results
+## saved limma::goana GO results
 go_1 <- readRDS(paste0(myDirectory, "go_1.rds"))
 go_2 <- readRDS(paste0(myDirectory, "go_2.rds"))
 go_3 <- readRDS(paste0(myDirectory, "go_3.rds"))
 go_4 <- readRDS(paste0(myDirectory, "go_4.rds"))
+
+## saved limma::kegga GO results
+kegg_1 <- readRDS(paste0(myDirectory, "kegg_1.rds")) %>% arrange(P.DE)
+kegg_2 <- readRDS(paste0(myDirectory, "kegg_2.rds")) %>% arrange(P.DE)
+kegg_3 <- readRDS(paste0(myDirectory, "kegg_3.rds")) %>% arrange(P.DE)
+kegg_4 <- readRDS(paste0(myDirectory, "kegg_4.rds")) %>% arrange(P.DE)
 
 ############################ user interface ###################################
 # this function defines the Shiny UI. new tabs can be added with tabPanel() and
@@ -217,7 +225,7 @@ go_4 <- readRDS(paste0(myDirectory, "go_4.rds"))
 # of whatever the .rds file is named
 
 ui <- shinyUI(fluidPage(
-              titlePanel("Explore RNAseq Analysis with Shiny"),
+              titlePanel(paste0("Explore RNAseq Analysis of ", proj_name, " data with Shiny")),
               mainPanel(
               tabsetPanel(type = "tabs",
                           
@@ -310,9 +318,9 @@ ui <- shinyUI(fluidPage(
               fluidRow(
               column(width = 12,
               h4(paste0("GO Enrichment Analysis was performed using limma::goana(), which tests for over-representation of gene
-                 ontology (GO) terms for specified enriched sets of genes. The Enriched Gene Set ", thresh_vol, " This enriched gene set is
-                 subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe', which is defined as all genes
-                 from the original count matrix that possess ENTREZ identifiers.")),
+                 ontology (GO) terms for specified enriched sets of genes. The Enriched Gene Set ", thresh_vol, " This enriched
+                 gene set is subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe', which
+                 is defined as all genes from the original count matrix that possess ENTREZ identifiers.")),
               selectInput(inputId = "go",
                           label = "Please choose comparison",
                           choices = c("Comparison 1" = "go_1",
@@ -327,29 +335,29 @@ ui <- shinyUI(fluidPage(
               h5("Note: Term = GO term, Ont = ontology that the GO term belongs to (e.g. 'BP', 'CC' and 'MF'), N = number of genes in the GO term,
                  DE = number of genes in the DE set, P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
               DT::dataTableOutput("table_3"))
-              )))  #,
+              )))),
+
+              ########## fifth panel ##########
+              tabPanel(title = "KEGG Pathway Enrichment Analysis",
+              fluidRow(
+              column(width = 12,
+              h4(paste0("KEGG Pathway Enrichment Analysis was performed using limma::kegga(), which tests for over-representation of KEGG pathways in one or more sets of genes.
+                 The Enriched Gene Set ", thresh_vol, " This enriched gene  set is subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe',
+                 which is defined as all genes from the original count matrix that possess ENTREZ identifiers.")),
+              selectInput(inputId = "kegg",
+                          label = "Please choose comparison",
+                          choices = c("Comparison 1" = "kegg_1",
+                                      "Comparison 2" = "kegg_2",
+                                      "Comparison 3" = "kegg_3",
+                                      "Comparison 4" = "kegg_4")),
+              ## fifth panel row 1
+              fluidRow(
+              column(width = 12,
+              h4("limma::kegga results table"),
+              h5("This table displaying results of the KEGG pathway enrichment analysis. Note: specific KEGG pathways can be queried in the search bar."),
+              DT::dataTableOutput("table_4"))
+              )))
               
-              # ########## fifth panel ##########
-              # tabPanel(title = "KEGG Pathway Enrichment Analysis",
-              # fluidRow(
-              # column(width = 12,
-              # h4(paste0("KEGG Pathway Enrichment Analysis was performed using limma::kegga(), which tests for over-representation of KEGG pathways in one or more sets of genes.
-              #    The Enriched Gene Set ", thresh_vol, " This enriched gene  set is subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe',
-              #    which is defined as all genes from the original count matrix that possess ENTREZ identifiers.")),
-              # selectInput(inputId = "kegg",
-              #             label = "Please choose comparison",
-              #             choices = c("Comparison 1" = "kegg_1",
-              #                         "Comparison 2" = "kegg_2",
-              #                         "Comparison 3" = "kegg_3",
-              #                         "Comparison 4" = "kegg_4")),
-              # ## fifth panel row 1
-              # fluidRow(
-              # column(width = 12,
-              # h4("limma::kegga results table"),
-              # h5("This table displaying results of the KEGG pathway enrichment analysis. Note: specific KEGG pathways can be queried in the search bar."),
-              # DT::dataTableOutput("table_4"))
-              #                     ))),
-              # 
               )))
 ))
 
@@ -405,8 +413,8 @@ server <- function(input, output) {
                  }})
     
     ## this reactive function records clicks a row of the results 
-    observeEvent(input$table_rows_selected, ignoreNULL = TRUE, {
-                 newValue <-  input$table_rows_selected
+    observeEvent(input$table_2_rows_selected, ignoreNULL = TRUE, {
+                 newValue <-  input$table_2_rows_selected
                  if(is.null(newValue)) {
                  click_value(1)
                  } else {
@@ -466,7 +474,7 @@ server <- function(input, output) {
                       starts_with("F74"), starts_with("H74"), starts_with("S74")) %>%
         head(1) %>% tidyr::gather(sample, counts, -c(Gene, geneName)) %>%
         mutate(group = substr(sample, 1, 4)) %>% 
-        ggplot(aes(x = group, y = log1p(counts), color = group)) +
+        ggplot(aes(x = group, y = counts, color = group)) +
         geom_point(size = 3) +
         ggtitle(selected_df()[click_value(), ]$geneName)
     })
@@ -526,8 +534,8 @@ server <- function(input, output) {
 ## this table is generated from a saved dataframes displaying the limma::kegga
 ## KEGG enrichment results
     
-    # input_5 <- reactive(get(input$kegg))
-    # output$table_4 <- DT::renderDataTable(input_5())
+    input_5 <- reactive(get(input$kegg))
+    output$table_4 <- DT::renderDataTable(input_5())
 
 } ### nothing EVER goes below this line because shiny will throw an error!!! ###
 shinyApp(ui = ui, server = server)
