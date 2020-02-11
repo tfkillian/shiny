@@ -140,11 +140,12 @@ serv_lib <- "/data/cbio/rlib/3.6"
 loc_lib <- "~/R/x86_64-pc-linux-gnu-library/3.6"
 
 ## this is the path to the DE results on the server
-# serv_res <- paste0("/srv/shiny-private-server/cbio/", proj_name, "/results/")
-serv_res <- "/srv/shiny-private-server/cbio/test/results/"
+# serv_res <- paste0("/srv/shiny-private-server/cbio/", proj_name, "/app/data/")
+# serv_res <- "/srv/shiny-private-server/cbio/test/results/"
+serv_res <- "/srv/shiny-private-server/cbio/test/app/data/"
 
 ## this is the path to the DE results on your local
-# loc_res <- paste0("~/tmp/", proj_name, "/results/")
+# loc_res <- paste0("~/tmp/", proj_name, "/app/data/")
 loc_res <- "~/tmp/shiny/results/"  
 
 ## This function switches R libraries 
@@ -233,15 +234,15 @@ ui <- shinyUI(fluidPage(
               tabPanel(title = "Description",
               fluidRow(
               column(width = 12,
-              h4(paste0("This report describes an RNAseq analysis of the ", proj_name, " data. The count matrix file analyzed in this
-                 RNAseq analysis was generated using a standard RNAseq pipeline including FastQC for the quality control of the
-                 raw .fastq data, trimmomatic for trimming the adapters from the raw reads, hisat2 to align the trimmed reads and
-                 htseq-count to produce the final count matrix from the aligned reads. Differential expression (DE) analysis was
-                 performed using tools from the DESeq2 Bioconductor package, analyzing the inferred transcriptional changes between
-                 test groups and producing various diagnostic plots. The results of the analysis are available as .rds and .tsv
-                 files listing genes that are differentially expressed and sorted by significantly small p-adjusted values across
-                 groups of samples. Lists of significantly expressed genes were taken from the DE results and used for gene set
-                 enrichment using the limma::goana package.")),
+              # h4(paste0("This report describes an RNAseq analysis of the ", proj_name, " data. The count matrix file analyzed in this
+              #    RNAseq analysis was generated using a standard RNAseq pipeline including FastQC for the quality control of the
+              #    raw .fastq data, trimmomatic for trimming the adapters from the raw reads, hisat2 to align the trimmed reads and
+              #    htseq-count to produce the final count matrix from the aligned reads. Differential expression (DE) analysis was
+              #    performed using tools from the DESeq2 Bioconductor package, analyzing the inferred transcriptional changes between
+              #    test groups and producing various diagnostic plots. The results of the analysis are available as .rds and .tsv
+              #    files listing genes that are differentially expressed and sorted by significantly small p-adjusted values across
+              #    groups of samples. Lists of significantly expressed genes were taken from the DE results and used for gene set
+              #    enrichment using the limma::goana package.")),
               # selectInput(inputId = "design",
               #             label = "Please choose comparison",
               #             choices = c("Comparison 1" = "col_1",
@@ -258,10 +259,10 @@ ui <- shinyUI(fluidPage(
               ########## second panel ##########
               tabPanel(title = "PCA",
               fluidRow(column(width = 12,
-              h4("PCA is a method of visually identifying the similarity or difference between samples. PCA rotates the data cloud
-                 onto an orthagonal basis determined by the dimensions of maximal variance. The first two Principal Components (PCs)
-                 usually hold the majority of the variance of the data. The following plot shows the count matrix samples projected
-                 onto the two largest Principal Components (PC1 and PC2)."),
+              # h4("PCA is a method of visually identifying the similarity or difference between samples. PCA rotates the data cloud
+              #    onto an orthagonal basis determined by the dimensions of maximal variance. The first two Principal Components (PCs)
+              #    usually hold the majority of the variance of the data. The following plot shows the count matrix samples projected
+              #    onto the two largest Principal Components (PC1 and PC2)."),
               # selectInput(inputId = "pca",
               #             label = "Please choose comparison",
               #             choices = c("pH 6.5 vs 7.4 for F cells" = "pca_1",
