@@ -145,8 +145,8 @@ loc_lib <- "~/R/x86_64-pc-linux-gnu-library/3.6"
 serv_res <- "/srv/shiny-private-server/cbio/test/app/data/"
 
 ## this is the path to the DE results on your local
-# loc_res <- paste0("~/tmp/", proj_name, "/app/data/")
-loc_res <- "~/tmp/shiny/results/"  
+loc_res <- paste0("~/tmp/", proj_name, "/app/data/")
+# loc_res <- "~/tmp/shiny/results/"  
 
 ## This function switches R libraries 
 setLibs <- function(x) {
