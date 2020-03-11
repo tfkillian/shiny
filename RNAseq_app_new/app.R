@@ -141,12 +141,12 @@ loc_lib <- "~/R/x86_64-pc-linux-gnu-library/3.6"
 
 ## this is the path to the DE results on the server
 # serv_res <- paste0("/srv/shiny-private-server/cbio/", proj_name, "/app/data/")
-# serv_res <- "/srv/shiny-private-server/cbio/test/results/"
-serv_res <- "/srv/shiny-private-server/cbio/test/app/data/"
+serv_res <- "/srv/shiny-private-server/cbio/test/results/"
+# serv_res <- "/srv/shiny-private-server/cbio/test/app/data/"
 
 ## this is the path to the DE results on your local
-loc_res <- paste0("~/tmp/", proj_name, "/app/data/")
-# loc_res <- "~/tmp/shiny/results/"  
+# loc_res <- paste0("~/tmp/", proj_name, "/app/data/")
+loc_res <- "~/tmp/shiny/results/"  
 
 ## This function switches R libraries 
 setLibs <- function(x) {
@@ -171,8 +171,8 @@ setPaths <- function(x) {
 ################################################################################
 #### if this is running on the server, change these functions to TRUE !!!!! ####
 ### if this is running on a local machine, then set these functions to FALSE ###
-myDirectory <- setPaths(TRUE)
-.libPaths(setLibs(TRUE))
+myDirectory <- setPaths(FALSE)
+.libPaths(setLibs(FALSE))
 ################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
@@ -335,6 +335,8 @@ ui <- shinyUI(fluidPage(
               h5("This table displaying results of the GO term enrichment analysis. Note: specific GO terms can be queried in the search bar."),
               h5("Note: Term = GO term, Ont = ontology that the GO term belongs to (e.g. 'BP', 'CC' and 'MF'), N = number of genes in the GO term,
                  DE = number of genes in the DE set, P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
+              # Button
+              #downloadButton('downloadData', 'Download data'),
               DT::dataTableOutput("table_3"))
               )))),
 
@@ -356,6 +358,8 @@ ui <- shinyUI(fluidPage(
               column(width = 12,
               h4("limma::kegga results table"),
               h5("This table displaying results of the KEGG pathway enrichment analysis. Note: specific KEGG pathways can be queried in the search bar."),
+              # Button
+              # downloadButton('downloadData', 'Download data'),
               DT::dataTableOutput("table_4"))
               )))
               
@@ -537,6 +541,24 @@ server <- function(input, output) {
     
     input_5 <- reactive(get(input$kegg))
     output$table_4 <- DT::renderDataTable(input_5())
+    
+######################### Download Button ######################################
+## this reactive variable passes the selected table download to teh download
+## button. The downloadHandler takes a filename argument, which tells the web
+## browser what filename to default to when saving. This argument can either be
+## a simple string, or it can be a function that returns a string
+## https://shiny.rstudio.com/reference/shiny/1.0.4/downloadButton.html
+    
+    # # Downloadable csv of selected dataset ----
+    # output$downloadData <- downloadHandler(
+    #     filename = function() {
+    #         paste(input$dataset, ".csv", sep = ",")
+    ## paste("dataset-", Sys.Date(), ".csv", sep="") ## paste file name
+    #     },
+    #     content = function(file) {
+    #         write.csv(datasetInput(), file, row.names = FALSE)
+    #     }
+    # )
 
 } ### nothing EVER goes below this line because shiny will throw an error!!! ###
 shinyApp(ui = ui, server = server)
