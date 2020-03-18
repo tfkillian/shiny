@@ -204,6 +204,10 @@ col_1 <- readRDS(paste0(myDirectory, "col_4.rds"))
 ## NOTE:: this MUST be the absolute path to work on the server
 pca_1 <- (paste0(myDirectory, "PCA4.png"))
 
+############################################################################################## HERE! ############
+## GO and KEGG need to be arranged by %>% arrange(P.ADJ.DE)
+## need to calculate P.ADJ.DE for these files.
+
 ## saved limma::goana GO results
 go_1 <- readRDS(paste0(myDirectory, "go_1.rds"))
 go_2 <- readRDS(paste0(myDirectory, "go_2.rds"))
@@ -215,6 +219,15 @@ kegg_1 <- readRDS(paste0(myDirectory, "kegg_1.rds")) %>% arrange(P.DE)
 kegg_2 <- readRDS(paste0(myDirectory, "kegg_2.rds")) %>% arrange(P.DE)
 kegg_3 <- readRDS(paste0(myDirectory, "kegg_3.rds")) %>% arrange(P.DE)
 kegg_4 <- readRDS(paste0(myDirectory, "kegg_4.rds")) %>% arrange(P.DE)
+
+###################### link results files as lists #############################
+## passing multiple dataframes for a given dropdown menu is done in the matter
+## of passing a list of dataframes
+## https://stackoverflow.com/questions/17499013/how-do-i-make-a-list-of-data-frames
+list_1 <- list(dds_df_1, go_1, kegg_1)
+list_2 <- list(dds_df_2, go_2, kegg_2)
+list_3 <- list(dds_df_3, go_3, kegg_3)
+list_4 <- list(dds_df_4, go_4, kegg_4)
 
 ############################ user interface ###################################
 # this function defines the Shiny UI. new tabs can be added with tabPanel() and
@@ -280,12 +293,12 @@ ui <- shinyUI(fluidPage(
               ########## third panel ##########              
               tabPanel("DE Analysis",
               h4(paste0("Interactive plots illustrating the results of the DESeq2 analysis of the ", proj_name, " data")),
-              selectInput(inputId = "comparison",
+              selectInput(inputId = "deseq",
               label = "Please choose comparison",
-              choices = c("Comparison 1" = "dds_df_1",
-                          "Comparison 2" = "dds_df_2",
-                          "Comparison 3" = "dds_df_3",
-                          "Comparison 4" = "dds_df_4")),
+              choices = c("Comparison 1" = "list_1",
+                          "Comparison 2" = "list_2",
+                          "Comparison 3" = "list_3",
+                          "Comparison 4" = "list_4")),
               ## third panel row 1
               fluidRow(
               column(width = 4,
@@ -324,10 +337,10 @@ ui <- shinyUI(fluidPage(
                  is defined as all genes from the original count matrix that possess ENTREZ identifiers.")),
               selectInput(inputId = "go",
                           label = "Please choose comparison",
-                          choices = c("Comparison 1" = "go_1",
-                                      "Comparison 2" = "go_2",
-                                      "Comparison 3" = "go_3",
-                                      "Comparison 4" = "go_4")),
+                          choices = c("Comparison 1" = "list_1",
+                                      "Comparison 2" = "list_2",
+                                      "Comparison 3" = "list_3",
+                                      "Comparison 4" = "list_4")),
               ## fourth panel row 1
               fluidRow(
               column(width = 12,
@@ -335,6 +348,8 @@ ui <- shinyUI(fluidPage(
               h5("This table displaying results of the GO term enrichment analysis. Note: specific GO terms can be queried in the search bar."),
               h5("Note: Term = GO term, Ont = ontology that the GO term belongs to (e.g. 'BP', 'CC' and 'MF'), N = number of genes in the GO term,
                  DE = number of genes in the DE set, P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
+              #textOutput("click_value2"),
+              textOutput("entrez"),
               # Button
               #downloadButton('downloadData', 'Download data'),
               DT::dataTableOutput("table_3"))
@@ -349,10 +364,10 @@ ui <- shinyUI(fluidPage(
                  which is defined as all genes from the original count matrix that possess ENTREZ identifiers.")),
               selectInput(inputId = "kegg",
                           label = "Please choose comparison",
-                          choices = c("Comparison 1" = "kegg_1",
-                                      "Comparison 2" = "kegg_2",
-                                      "Comparison 3" = "kegg_3",
-                                      "Comparison 4" = "kegg_4")),
+                          choices = c("Comparison 1" = "list_1",
+                                      "Comparison 2" = "list_2",
+                                      "Comparison 3" = "list_3",
+                                      "Comparison 4" = "list_4")),
               ## fifth panel row 1
               fluidRow(
               column(width = 12,
@@ -362,7 +377,6 @@ ui <- shinyUI(fluidPage(
               # downloadButton('downloadData', 'Download data'),
               DT::dataTableOutput("table_4"))
               )))
-              
               )))
 ))
 
@@ -373,16 +387,29 @@ server <- function(input, output) {
     
 ##################### selecting dataset from dropdown menu #####################
 ## gets the dropdown menu input for the dataset plotted for the DE analysis tab
-## NOTE: "dds_df_1" = dds_df_1  both should be the name of the data table to be
-## selected correctly
     
-    selected_df <- reactive({switch(input$comparison, 
-                                    "dds_df_1" = dds_df_1,
-                                    "dds_df_2" = dds_df_2,
-                                    "dds_df_3" = dds_df_3,
-                                    "dds_df_4" = dds_df_4
+    selected_df1 <- reactive({switch(input$deseq, 
+                                    "list_1" = list_1,
+                                    "list_2" = list_2,
+                                    "list_3" = list_3,
+                                    "list_4" = list_4
+    )})
+    
+    selected_df2 <- reactive({switch(input$go,
+                                    "list_1" = list_1,
+                                    "list_2" = list_2,
+                                    "list_3" = list_3,
+                                    "list_4" = list_4
     )})
 
+    selected_df3 <- reactive({switch(input$kegg,
+                                     "list_1" = list_1,
+                                     "list_2" = list_2,
+                                     "list_3" = list_3,
+                                     "list_4" = list_4
+    )})
+
+    
 ########### create reactive variable value to select clicked object ############
 ## This reactive variable captures the row of the gene clicked which matches
 ## the selected dataframe. The initial value is set to 1, (i.e. the gene with
@@ -396,10 +423,10 @@ server <- function(input, output) {
     
     ## this reactive function records clicks on the MA plot 
     observeEvent(input$plot1_click, ignoreNULL = TRUE, {
-                 point_gene <- nearPoints(selected_df(), input$plot1_click, threshold = 1000)
+                 point_gene <- nearPoints(selected_df1()[[1]], input$plot1_click, threshold = 1000)
                  ## if your data doesn't have "genes" this needs to be some sort
                  ## of unique ID like UNIPROT or PEPTIDE ID
-                 newValue <- which(grepl(point_gene$Gene, selected_df()$Gene))
+                 newValue <- which(grepl(point_gene$Gene, selected_df1()[[1]]$Gene))
                  if(is.null(newValue)) {
                  click_value(1) 
                  } else {
@@ -407,10 +434,10 @@ server <- function(input, output) {
                  }})
     ## this reactive function records clicks on the Volcano plot 
     observeEvent(input$plot2_click, ignoreNULL = TRUE, {
-                 point_gene <- nearPoints(selected_df(), input$plot2_click, threshold = 1000)
+                 point_gene <- nearPoints(selected_df1()[[1]], input$plot2_click, threshold = 1000)
                  ## if your data doesn't have "genes" this needs to be some sort
                  ## of unique ID like UNIPROT or PEPTIDE ID
-                 newValue <- which(grepl(point_gene$Gene, selected_df()$Gene))
+                 newValue <- which(grepl(point_gene$Gene, selected_df1()[[1]]$Gene))
                  if(is.null(newValue)) {
                  click_value(1)
                  } else {
@@ -426,9 +453,28 @@ server <- function(input, output) {
                  click_value(newValue)
                  }})
     
+########################## GO TERM Gene Table ##################################
+## This reactive variable captures the row of the gene clicked which matches
+## the selected dataframe for the GO results tab. The initial value is set to 1,
+## (i.e. the GO TERM with most sig. padj score). The reactive value will be used
+## to generate a table of the list of genes corresponding to the row of the
+## clicked GO term, furthermore the genes corresponding to the clicked GO term
+## will be highlighted in a volcano plot (TBA)
+    
+    click_value2 <- reactiveVal(value = 1, label = 1) 
+    ## this reactive function records clicks a row of the results in GO table
+    observeEvent(input$table_3_rows_selected, ignoreNULL = TRUE, {
+        newValue <-  input$table_3_rows_selected
+        if(is.null(newValue)) {
+            click_value2(1)
+        } else {
+            click_value2(newValue)
+        }})
+    
     ## if for some reason you want to know the value of what the cursor is
     ## clicking on, this reactive variable will display the output of that
     # output$click_value <- renderText({click_value()})
+    output$click_value2 <- renderText({click_value2()})
 
 #################### First plot (MA plot) ######################################
 ## This MA plot is generated automatically from dataset selected from dropdown,
@@ -437,9 +483,9 @@ server <- function(input, output) {
 ## click input) is highlighted as a transparent blue circle
     
     output$plot_graph_1 <- renderPlot({
-        ggplot(selected_df(), aes(x = baseMean, y = log2FoldChange)) +
+        ggplot(selected_df1()[[1]], aes(x = baseMean, y = log2FoldChange)) +
         geom_point(aes(colour = padj < thresh_padj), size = 0.5) +
-        geom_point(data = selected_df()[click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
+        geom_point(data = selected_df1()[[1]][click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
         scale_colour_manual(name = paste0('padj < ', thresh_padj), values = setNames(c('red', 'black'), c(TRUE, FALSE))) +
         scale_x_continuous(trans = "log10", limits = c(0.1, 300000)) +
         geom_smooth(colour = "red") +
@@ -455,11 +501,11 @@ server <- function(input, output) {
 ## transparent blue circle
     
     output$plot_graph_2 <- renderPlot({ 
-        res_df <- as.data.frame(selected_df(), na.rm = TRUE)
+        res_df <- as.data.frame(selected_df1()[[1]], na.rm = TRUE)
         res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
         vol <- ggplot(data = res_df, aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
                geom_point(size = 0.5) +
-               geom_point(data = selected_df()[click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
+               geom_point(data = selected_df1()[[1]][click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
                xlab("log2 fold change") + ylab("-log10 p-value") +
                theme(plot.title = element_text(hjust = 0.5))
         vol + scale_color_manual(values = c("#000000", "#FF0000"))
@@ -473,7 +519,7 @@ server <- function(input, output) {
 ## groups that are being compared. If pseudocounts are desired, change to log1p
 
         output$plot_graph_3 <- renderPlot({ 
-        as_tibble(selected_df()[click_value(), ]) %>% 
+        as_tibble(selected_df1()[[1]][click_value(), ]) %>% 
         dplyr::select(Gene, geneName,
                       starts_with("F65"), starts_with("H65"), starts_with("S65"),
                       starts_with("F74"), starts_with("H74"), starts_with("S74")) %>%
@@ -481,7 +527,7 @@ server <- function(input, output) {
         mutate(group = substr(sample, 1, 4)) %>% 
         ggplot(aes(x = group, y = counts, color = group)) +
         geom_point(size = 3) +
-        ggtitle(selected_df()[click_value(), ]$geneName)
+        ggtitle(selected_df1()[[1]][click_value(), ]$geneName)
     })
     
 
@@ -520,26 +566,74 @@ server <- function(input, output) {
 ## highest padj), and only one row can be selected at a time
 ## NOTE: "selection = 'single'" means that only one row can be selected. this
 ## app does not currently support selecting multiple rows
-    
-    input_3 <- reactive(get(input$comparison))
+
+    # input_3 <- reactive(get(input$comparison))
+    input_3 <- reactive(selected_df1()[[1]])
     output$table_2 <- DT::renderDataTable(input_3() %>%
                       dplyr::select(-neg_log10_padj) %>%
                       # mutate_at(3:5, round, 3) %>%
                       # mutate_at(8:last_col(), round, 3) %>%
                       arrange(padj), selection = 'single')
+## this table has to be selection = 'single' for the count plot to work
 
 ########################## Plot datatable GO results ###########################
-## this table is generated from a saved dataframes displaying the limma::goana
+## this table is generated from a saved dataframe displaying the limma::goana
 ## GO enrichment results
     
-    input_4 <- reactive(get(input$go))
+    ## go results go here
+    
+    ############################################################################################## HERE! ############
+    # input_4 <- reactive(get(input$go)) ## old selction mechanism
+    input_4 <- reactive(selected_df2()[[2]])
     output$table_3 <- DT::renderDataTable(input_4())
+    input_6 <- reactive(selected_df2()[[2]][click_value2(), ]$ENTREZID_in_term)
+    # output$entrez <- renderText({input_6()})
+    # output$entrez <- renderText({which(grepl(selected_df()[[1]]$ENTREZID, strsplit(input_6(), ";")))})
+    # output$entrez <- renderText({as.vector(strsplit(input_6(), ";"))})
+    output$entrez <- renderText({unlist(strsplit(input_6(), ";"))})
+    # input_6() %in% selected_df2()[[1]]$ENTREZID})
+    # output$table_5 <- DT::renderDataTable(input_6() %in% selected_df2()[[1]]$ENTREZID)
+    # strsplit gives you back a list of the character vectors, so if you want it
+    # in a single vector, use unlist as well.
+    #unlist(strsplit(string, ","))
+    
+    ############################################################################################## HERE! ############
+    
+    ## dynamic table goes here
+    # input_4 <- reactive(selected_df2()[[2]]) ## stuff
+    # output$table_3 <- DT::renderDataTable(input_4()) ## things
+    
+    ############################################################################################## HERE! ############
+    
+    ## dynamic volcano plot to show (no blue circles!)
+    
+    ## This Volcano plot is generated automatically from dataset selected from the
+    ## dropdown menu, with threshold at log2FoldChange > 1 and padj < 0.05. Points
+    ## meeting this threshold are shown in red, all other points in black, and the
+    ## selected gene (determined by user click input) is highlighted as a
+    ## transparent blue circle
+    
+    # output$plot_graph_2 <- renderPlot({ 
+    #     res_df <- as.data.frame(selected_df1()[[1]], na.rm = TRUE)
+    #     res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
+    #     vol <- ggplot(data = res_df, aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
+    #         geom_point(size = 0.5) +
+    #         geom_point(data = selected_df1()[[1]][click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
+    #         xlab("log2 fold change") + ylab("-log10 p-value") +
+    #         theme(plot.title = element_text(hjust = 0.5))
+    #     vol + scale_color_manual(values = c("#000000", "#FF0000"))
+    # })
     
 ########################## Plot datatable KEGG results #########################
 ## this table is generated from a saved dataframes displaying the limma::kegga
 ## KEGG enrichment results
     
-    input_5 <- reactive(get(input$kegg))
+    ############################################################################################## HERE! ############
+    
+    #### need to add ENTREZID for KEGG in results
+    
+    # input_5 <- reactive(get(input$kegg))
+    input_5 <- reactive(selected_df3()[[3]])
     output$table_4 <- DT::renderDataTable(input_5())
     
 ######################### Download Button ######################################
@@ -549,7 +643,23 @@ server <- function(input, output) {
 ## a simple string, or it can be a function that returns a string
 ## https://shiny.rstudio.com/reference/shiny/1.0.4/downloadButton.html
     
-    # # Downloadable csv of selected dataset ----
+    ############################################################################################## HERE! ############
+    
+    ### make the download button work for GO dynamic table AND KEGG dynamic table
+    
+    
+    # # Downloadable csv of selected dataset GO dynamic table
+    # output$downloadData <- downloadHandler(
+    #     filename = function() {
+    #         paste(input$dataset, ".csv", sep = ",")
+    ## paste("dataset-", Sys.Date(), ".csv", sep="") ## paste file name
+    #     },
+    #     content = function(file) {
+    #         write.csv(datasetInput(), file, row.names = FALSE)
+    #     }
+    # )
+    
+    # # Downloadable csv of selected dataset KEGG dynamic table
     # output$downloadData <- downloadHandler(
     #     filename = function() {
     #         paste(input$dataset, ".csv", sep = ",")
