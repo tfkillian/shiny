@@ -315,27 +315,36 @@ ui <- shinyUI(fluidPage(## title panel
                                       "Comparison 2" = "list_2",
                                       "Comparison 3" = "list_3",
                                       "Comparison 4" = "list_4")),
-              ## fourth panel row 1
+              # fourth panel row 1
+              fluidRow(column(width = 12,
+              h4("Volcano Plot"),
+              h5(paste0(thresh_vol)),
+              plotOutput("plot_graph_4", height = 350))),
+              br(),
+              # fourth panel row 2
               fluidRow(column(width = 12,
               h4("limma::goana results table"),
               h5("This table displaying results of the GO term enrichment analysis. Note: specific GO terms can be queried in the search bar."),
               h5("Note: Term = GO term, Ont = ontology that the GO term belongs to (e.g. 'BP', 'CC' and 'MF'), N = number of genes in the GO term,
                  DE = number of genes in the DE set, P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
               #textOutput("click_value2"), ### this is the row you click on
-              textOutput("entrez"), ## this is the string of ENTREZ IDs on each row clicked
-              # Button ################################################## download button! ############3
-              #downloadButton('downloadData', 'Download data'),
-              DT::dataTableOutput("table_3")),
-              fluidRow(column(width = 12,
-              h5("blah blah Dynamic table blah"),
-              DT::dataTableOutput("table_5")))
+              # textOutput("entrez"), ## this is the string of ENTREZ IDs on each row clicked
+              # Button ########################## download button needs to be adjusted !! ############3
+              downloadButton('downloadData1', 'Download data'),
+              br(),
+              br(),
+              br(),
+              DT::dataTableOutput("table_3")) #,
+              # fluidRow(column(width = 12,
+              # h5("blah blah Dynamic table blah"),
+              # DT::dataTableOutput("table_5")))
               )))),
 
               ########## fifth panel ##########
               tabPanel(title = "KEGG Pathway Enrichment Analysis",
               fluidRow(column(width = 12,
               h4(paste0("KEGG Pathway Enrichment Analysis was performed using limma::kegga(), which tests for over-representation of KEGG pathways in one or more sets of genes.
-                 The Enriched Gene Set ", thresh_vol, " This enriched gene  set is subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe',
+                 The Enriched Gene Set ", thresh_vol, " This enriched gene set is subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe',
                  which is defined as all genes from the original count matrix that possess ENTREZ identifiers.")),
               selectInput(inputId = "kegg",
                           label = "Please choose comparison",
@@ -343,12 +352,21 @@ ui <- shinyUI(fluidPage(## title panel
                                       "Comparison 2" = "list_2",
                                       "Comparison 3" = "list_3",
                                       "Comparison 4" = "list_4")),
-              ## fifth panel row 1
+              # fifth panel row 1
+              fluidRow(column(width = 12,
+              h4("Volcano Plot"),
+              h5(paste0(thresh_vol)),
+              plotOutput("plot_graph_5", height = 350))),
+              br(),
+              ## fifth panel row 2
               fluidRow(column(width = 12,
               h4("limma::kegga results table"),
               h5("This table displaying results of the KEGG pathway enrichment analysis. Note: specific KEGG pathways can be queried in the search bar."),
-              # Button ################################################## download button! ############3
-              # downloadButton('downloadData', 'Download data'),
+              # Button ############################### download button needs to be adjusted ! ############3
+              downloadButton('downloadData2', 'Download data'),
+              br(),
+              br(),
+              br(),
               DT::dataTableOutput("table_4"))
               )))
               )))
@@ -557,18 +575,22 @@ server <- function(input, output) {
     output$entrez <- renderText({stringr::str_replace_all(input_6(), ";", "|") %>%
                                  grepl(selected_df2()[[1]]$ENTREZID) %>%
                                  which() %>% unlist() %>% as.vector() # %>% unlist()
-    })
+    }) # which(arr.ind=TRUE) ######################### need to try this out
     
     ## we'll try reverse mapping dplyr::filter(mtcars, grepl('Toyota|Mazda', type))
     
+    #################################### NEED TO UNCOMMENT THIS ########################################
     
-    output$table_5 <- reactive({#stringr::str_replace_all(input_6(), ";", "|") %>%
-            selected_df2()[[1]][grep(stringr::str_replace_all(input_6(), ";", "|"), selected_df2()[[1]]$ENTREZID), ] %>% 
-                                #grep(selected_df2()[[1]]$ENTREZID) %>%
-                                # which() %>%
-                                #selected_df2()[[1]][.,] %>% 
-                                DT::renderDataTable()
-    })
+    ## then mtcars %>% filter(str_detect(type, 'Toyota|Mazda'))
+    ## selected_df2()[[1]] %>% filter(str_detect(ENTREZID, entrez())) ########### MYABE?
+    
+    # output$table_5 <- reactive({#stringr::str_replace_all(input_6(), ";", "|") %>%
+    #         selected_df2()[[1]][grep(stringr::str_replace_all(input_6(), ";", "|"), selected_df2()[[1]]$ENTREZID), ] %>% 
+    #                             #grep(selected_df2()[[1]]$ENTREZID) %>%
+    #                             # which() %>%
+    #                             #selected_df2()[[1]][.,] %>% 
+    #                             DT::renderDataTable()
+    # })
     
     #output$table_5 <- reactive({DT::renderDataTable(selected_df2()[[1]][entrez(), ])
                                 # grepl(selected_df2()[[1]]$ENTREZID) %>% which() %>% as.vector() %>% 
@@ -581,7 +603,6 @@ server <- function(input, output) {
                                 
     #})
     
-    
     #selected_df2()[[1]][.,]
     ## subset
     # mysample <- mydata[sample(1:nrow(mydata), 50, replace=FALSE),] 
@@ -592,55 +613,40 @@ server <- function(input, output) {
     #                             DT::renderDataTable()
     # })
     
-    # selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% . ] %>%
-    
     # no applicable method for 'slice_' applied to an object of class "c('integer', 'numeric
     
-    #unlist(which(grepl(selected_df2()[[1]]$ENTREZID)))
-    #ultimately what we want is the ROWS of the DDS df
+    # unlist(which(grepl(selected_df2()[[1]]$ENTREZID)))
     # unlist(strsplit(input_6(), ";")) %>% ## do we need to unlist?
     # stringr::str_detect(selected_df2()[[1]]$ENTREZID)
-    # %>% gsub(" ", "|", table$col1) 
-    ## make pipe this to gsub and replace " " with "|"
     # output$entrez <- renderText({input_6()})
     # output$entrez <- renderText({which(grepl(selected_df()[[1]]$ENTREZID, strsplit(input_6(), ";")))})
     # output$entrez <- renderText({as.vector(strsplit(input_6(), ";"))})
     # input_6() %in% selected_df2()[[1]]$ENTREZID})
     # output$table_5 <- DT::renderDataTable(input_6() %in% selected_df2()[[1]]$ENTREZID)
-    # strsplit gives you back a list of the character vectors, so if you want it
-    # in a single vector, use unlist as well.
+    # strsplit gives you back a list of the character vectors, so if you want it in a single vector, use unlist as well.
     #unlist(strsplit(string, ","))
     ## I guess we'll try stringr next str_detect() str_detect(chars, value)
     # Just in case you would also like check if a string (or a set of strings)
     # contain(s) multiple sub-strings, you can also use the '|' between two substrings.
     
-    ############################################################################################## HERE! ############
-    
-    ## dynamic table goes here
-    # input_4 <- reactive(selected_df2()[[2]]) ## stuff
-    # output$table_3 <- DT::renderDataTable(input_4()) ## things
-    
-    ############################################################################################## HERE! ############
-    
-    ## dynamic volcano plot to show (no blue circles!)
-    
-    ## This Volcano plot is generated automatically from dataset selected from the
-    ## dropdown menu, with threshold at log2FoldChange > 1 and padj < 0.05. Points
-    ## meeting this threshold are shown in red, all other points in black, and the
-    ## selected gene (determined by user click input) is highlighted as a
-    ## transparent blue circle
-    
-    # output$plot_graph_2 <- renderPlot({ 
-    #     res_df <- as.data.frame(selected_df1()[[1]], na.rm = TRUE)
-    #     res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
-    #     vol <- ggplot(data = res_df, aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
-    #         geom_point(size = 0.5) +
-    #         geom_point(data = selected_df1()[[1]][click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
-    #         xlab("log2 fold change") + ylab("-log10 p-value") +
-    #         theme(plot.title = element_text(hjust = 0.5))
-    #     vol + scale_color_manual(values = c("#000000", "#FF0000"))
-    # })
-    
+############################### GO Volcano plot ################################
+## This Volcano plot is generated automatically from dataset selected from the
+## dropdown menu, with threshold at log2FoldChange > 1 and padj < 0.05. Points
+## meeting this threshold are shown in red, all other points in black, and the
+## selected genes corresponding to the GOID clicked (determined by user click
+## input in the table below it) are highlighted in GREEN
+
+    output$plot_graph_4 <- renderPlot({ ############################################# HERE! ############
+        res_df <- as.data.frame(selected_df2()[[1]], na.rm = TRUE) 
+        res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
+        vol <- ggplot(data = res_df, aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
+            geom_point(size = 0.5) +
+            # geom_point(data = selected_df1()[[1]][click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
+            xlab("log2 fold change") + ylab("-log10 p-value") +
+            theme(plot.title = element_text(hjust = 0.5))
+        vol + scale_color_manual(values = c("#000000", "#FF0000"))
+    })
+
 ########################## Plot datatable KEGG results #########################
 ## this table is generated from a saved dataframes displaying the limma::kegga
 ## KEGG enrichment results
@@ -661,57 +667,49 @@ server <- function(input, output) {
     #         stringr::str_detect(selected_df3()[[1]]$ENTREZID)
     # })
     
-    ############################################################################################## HERE! ############
+############################# KEGG Volcano plot ################################
+## This Volcano plot is generated automatically from dataset selected from the
+## dropdown menu, with threshold at log2FoldChange > 1 and padj < 0.05. Points
+## meeting this threshold are shown in red, all other points in black, and the
+## selected genes corresponding to the KEGG Pathway clicked (determined by user
+## click input in the table below it) are highlighted in GREEN
     
-    ## dynamic volcano plot to show (no blue circles!)
+    output$plot_graph_5 <- renderPlot({ ############################################# HERE! ############
+        res_df <- as.data.frame(selected_df3()[[1]], na.rm = TRUE) 
+        res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
+        vol <- ggplot(data = res_df, aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
+            geom_point(size = 0.5) +
+            # geom_point(data = selected_df1()[[1]][click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
+            xlab("log2 fold change") + ylab("-log10 p-value") +
+            theme(plot.title = element_text(hjust = 0.5))
+        vol + scale_color_manual(values = c("#000000", "#FF0000"))
+    })
     
-    ## This Volcano plot is generated automatically from dataset selected from the
-    ## dropdown menu, with threshold at log2FoldChange > 1 and padj < 0.05. Points
-    ## meeting this threshold are shown in red, all other points in black, and the
-    ## selected gene (determined by user click input) is highlighted as a
-    ## transparent blue circle
-    
-    # output$plot_graph_2 <- renderPlot({ 
-    #     res_df <- as.data.frame(selected_df1()[[1]], na.rm = TRUE)
-    #     res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
-    #     vol <- ggplot(data = res_df, aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
-    #         geom_point(size = 0.5) +
-    #         geom_point(data = selected_df1()[[1]][click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
-    #         xlab("log2 fold change") + ylab("-log10 p-value") +
-    #         theme(plot.title = element_text(hjust = 0.5))
-    #     vol + scale_color_manual(values = c("#000000", "#FF0000"))
-    # })
-    
-######################### Download Button ######################################
+######################### Download Buttons #####################################
 ## this reactive variable passes the selected table download to the download
 ## button. The downloadHandler takes a filename argument, which tells the web
 ## browser what filename to default to when saving.
 ## https://shiny.rstudio.com/reference/shiny/1.0.4/downloadButton.html
     
-    ############################################################################################## HERE! ############
-    ### make the download button work for GO dynamic table AND KEGG dynamic table
-    
     ## DOWNLOAD BUTTON 1 Downloadable csv of selected dataset GO dynamic table
-    # output$downloadData1 <- downloadHandler(
-    #     filename = function() {
-    #         paste(input$dataset, ".csv", sep = ",")
-    ## paste("dataset-", Sys.Date(), ".csv", sep="") ## paste file name
-    #     },
-    #     content = function(file) {
-    #         write.csv(datasetInput(), file, row.names = FALSE)
-    #     }
-    # )
+    output$downloadData1 <- downloadHandler(
+        filename = function() {
+            paste('GOID_genes', Sys.Date(), '.csv', sep='')
+        },
+        content = function(file) {
+            write.csv(selected_df2()[[1]]$ENTREZID, file, row.names = FALSE) ########## this needs to be changed #### 
+        }
+    )
     
     ## DOWNLOAD BUTTON 2 Downloadable csv of selected dataset KEGG dynamic table
-    # output$downloadData2 <- downloadHandler(
-    #     filename = function() {
-    #         paste(input$dataset, ".csv", sep = ",")
-    ## paste("dataset-", Sys.Date(), ".csv", sep="") ## paste file name
-    #     },
-    #     content = function(file) {
-    #         write.csv(datasetInput(), file, row.names = FALSE)
-    #     }
-    # )
+    output$downloadData2 <- downloadHandler(
+        filename = function() {
+            paste('KEGG_path_genes', Sys.Date(), '.csv', sep='')
+        },
+        content = function(file) {
+            write.csv(selected_df2()[[1]]$ENTREZID, file, row.names = FALSE) ########## this needs to be changed #### 
+        }
+    )
 
 } ### nothing EVER goes below this line because shiny will throw an error!!! ###
 shinyApp(ui = ui, server = server)
