@@ -327,19 +327,19 @@ ui <- shinyUI(fluidPage(## title panel
               h5("This table displaying results of the GO term enrichment analysis. Note: specific GO terms can be queried in the search bar."),
               h5("Note: Term = GO term, Ont = ontology that the GO term belongs to (e.g. 'BP', 'CC' and 'MF'), N = number of genes in the GO term,
                  DE = number of genes in the DE set, P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
-              #textOutput("click_value2"), ### this is the row you click on
-              # textOutput("entrez"), ## this is the string of ENTREZ IDs on each row clicked
-              # Button ########################## download button needs to be adjusted !! ############3
+              # Button ########################## download button needs to be adjusted !! ############
               downloadButton('downloadData1', 'Download data'),
               br(),
               br(),
               br(),
-              DT::dataTableOutput("table_3")) #,
-              # fluidRow(column(width = 12,
-              # h5("blah blah Dynamic table blah"),
-              # DT::dataTableOutput("table_5")))
+              DT::dataTableOutput("table_3")),
+              br(),
+              br(),
+              br(),
+              fluidRow(column(width = 12,
+              h4("Genes found in significant GO IDs"),
+              DT::dataTableOutput("table_5")))
               )))),
-
               ########## fifth panel ##########
               tabPanel(title = "KEGG Pathway Enrichment Analysis",
               fluidRow(column(width = 12,
@@ -357,6 +357,8 @@ ui <- shinyUI(fluidPage(## title panel
               h4("Volcano Plot"),
               h5(paste0(thresh_vol)),
               plotOutput("plot_graph_5", height = 350))),
+              br(),
+              br(),
               br(),
               ## fifth panel row 2
               fluidRow(column(width = 12,
@@ -568,67 +570,12 @@ server <- function(input, output) {
 ######## Generate dynamic datatable of ENTREZ genes based on GO results ########
 ## this table is generated from a saved dataframe displaying the limma::goana
 ## GO enrichment results
+
+    input_5 <- reactive(selected_df2()[[2]][click_value2(), ]$ENTREZID_in_term %>%
+                        grepl(selected_df2()[[1]]$ENTREZID) %>% which())
     
-    ######################################################################################## HERE! ############
-    input_6 <- reactive(selected_df2()[[2]][click_value2(), ]$ENTREZID_in_term)
-    
-    output$entrez <- renderText({stringr::str_replace_all(input_6(), ";", "|") %>%
-                                 grepl(selected_df2()[[1]]$ENTREZID) %>%
-                                 which() %>% unlist() %>% as.vector() # %>% unlist()
-    }) # which(arr.ind=TRUE) ######################### need to try this out
-    
-    ## we'll try reverse mapping dplyr::filter(mtcars, grepl('Toyota|Mazda', type))
-    
-    #################################### NEED TO UNCOMMENT THIS ########################################
-    
-    ## then mtcars %>% filter(str_detect(type, 'Toyota|Mazda'))
-    ## selected_df2()[[1]] %>% filter(str_detect(ENTREZID, entrez())) ########### MYABE?
-    
-    # output$table_5 <- reactive({#stringr::str_replace_all(input_6(), ";", "|") %>%
-    #         selected_df2()[[1]][grep(stringr::str_replace_all(input_6(), ";", "|"), selected_df2()[[1]]$ENTREZID), ] %>% 
-    #                             #grep(selected_df2()[[1]]$ENTREZID) %>%
-    #                             # which() %>%
-    #                             #selected_df2()[[1]][.,] %>% 
-    #                             DT::renderDataTable()
-    # })
-    
-    #output$table_5 <- reactive({DT::renderDataTable(selected_df2()[[1]][entrez(), ])
-                                # grepl(selected_df2()[[1]]$ENTREZID) %>% which() %>% as.vector() %>% 
-                                # dplyr::slice(selected_df2()[[1]], row_number() == n(.)) %>%
-                                # selected_df2()[[1]][rowValue,] %>% 
-                                # stringr::str_locate(., selected_df2()[[1]]$ENTREZID) %>%
-                                #dplyr::filter(selected_df2()[[1]], n(.)) %>% 
-                                #dplyr::filter_at(str_detect(selected_df2()[[1]], .)) %>% 
-                                #dplyr::filter(selected_df2()[[1]] %in% . ) %>%
-                                
-    #})
-    
-    #selected_df2()[[1]][.,]
-    ## subset
-    # mysample <- mydata[sample(1:nrow(mydata), 50, replace=FALSE),] 
-    
-    # output$table_5 <- reactive({str_split(input_6(), ";") %>%
-    #                             selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% . ] %>%
-    #                             # selected_df2()[[1]][.,] %>% 
-    #                             DT::renderDataTable()
-    # })
-    
-    # no applicable method for 'slice_' applied to an object of class "c('integer', 'numeric
-    
-    # unlist(which(grepl(selected_df2()[[1]]$ENTREZID)))
-    # unlist(strsplit(input_6(), ";")) %>% ## do we need to unlist?
-    # stringr::str_detect(selected_df2()[[1]]$ENTREZID)
-    # output$entrez <- renderText({input_6()})
-    # output$entrez <- renderText({which(grepl(selected_df()[[1]]$ENTREZID, strsplit(input_6(), ";")))})
-    # output$entrez <- renderText({as.vector(strsplit(input_6(), ";"))})
-    # input_6() %in% selected_df2()[[1]]$ENTREZID})
-    # output$table_5 <- DT::renderDataTable(input_6() %in% selected_df2()[[1]]$ENTREZID)
-    # strsplit gives you back a list of the character vectors, so if you want it in a single vector, use unlist as well.
-    #unlist(strsplit(string, ","))
-    ## I guess we'll try stringr next str_detect() str_detect(chars, value)
-    # Just in case you would also like check if a string (or a set of strings)
-    # contain(s) multiple sub-strings, you can also use the '|' between two substrings.
-    
+    output$table_5 <- DT::renderDataTable((selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% input_5(), ]))
+
 ############################### GO Volcano plot ################################
 ## This Volcano plot is generated automatically from dataset selected from the
 ## dropdown menu, with threshold at log2FoldChange > 1 and padj < 0.05. Points
@@ -651,8 +598,8 @@ server <- function(input, output) {
 ## this table is generated from a saved dataframes displaying the limma::kegga
 ## KEGG enrichment results
     
-    input_5 <- reactive(selected_df3()[[3]])
-    output$table_4 <- DT::renderDataTable(input_5())
+    input_6 <- reactive(selected_df3()[[3]])
+    output$table_4 <- DT::renderDataTable(input_6())
     
     ############################################################################################## HERE! ############
     
@@ -694,20 +641,22 @@ server <- function(input, output) {
     ## DOWNLOAD BUTTON 1 Downloadable csv of selected dataset GO dynamic table
     output$downloadData1 <- downloadHandler(
         filename = function() {
-            paste('GOID_genes', Sys.Date(), '.csv', sep='')
+            paste("GOID_genes", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-            write.csv(selected_df2()[[1]]$ENTREZID, file, row.names = FALSE) ########## this needs to be changed #### 
+            write.csv(selected_df2()[[1]]$ENTREZID, file, sep = ",",
+                      row.names = FALSE) ########## this needs to be changed ########## HERE ##########
         }
     )
     
     ## DOWNLOAD BUTTON 2 Downloadable csv of selected dataset KEGG dynamic table
     output$downloadData2 <- downloadHandler(
         filename = function() {
-            paste('KEGG_path_genes', Sys.Date(), '.csv', sep='')
+            paste("KEGG_path_genes", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-            write.csv(selected_df2()[[1]]$ENTREZID, file, row.names = FALSE) ########## this needs to be changed #### 
+            write.csv(selected_df2()[[1]]$ENTREZID, file, sep = ",",
+                      row.names = FALSE) ########## this needs to be changed ########## HERE ##########
         }
     )
 

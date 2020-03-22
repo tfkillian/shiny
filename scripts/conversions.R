@@ -66,14 +66,14 @@ dds_df_4 <- dds_df_4 %>% dplyr::select(-neg_log10_padj) %>%
 go_list <- mapIds(org.Hs.eg.db, keys(org.Hs.eg.db, "GO"),
                   "ENTREZID", "GO", multiVals = "list")
 go_vector <- lapply(go_list, as.vector)
-ezs <- sapply(go_vector, paste0, collapse = ";")
+ezs <- sapply(go_vector, paste0, collapse = "|")
 go_df <- data.frame(GOID = names(go_vector), ENTREZID = ezs)
 
 ### then map GO terms to genes between tables via ENTREZID
-go_1 <- go_1 %>% dplyr::select(-ENTREZID)
-go_2 <- go_2 %>% dplyr::select(-ENTREZID)
-go_3 <- go_3 %>% dplyr::select(-ENTREZID)
-go_4 <- go_4 %>% dplyr::select(-ENTREZID)
+go_1 <- go_1 %>% dplyr::select(-ENTREZID_in_term)
+go_2 <- go_2 %>% dplyr::select(-ENTREZID_in_term)
+go_3 <- go_3 %>% dplyr::select(-ENTREZID_in_term)
+go_4 <- go_4 %>% dplyr::select(-ENTREZID_in_term)
 
 go_1 <- go_1 %>% dplyr::left_join(go_df, by ="GOID")
 go_2 <- go_2 %>% dplyr::left_join(go_df, by ="GOID")
