@@ -109,7 +109,7 @@ library("shiny")
 library("dplyr")
 library("tidyr")
 library("ggplot2")
-library("stringr") ###### make sure that this works on the server
+library("stringr") ###### make sure that this works on the server ###################### do we use this?? ######
 
 ####################### set current directory variables ########################
 ## The functions below streamline the variables that you must change between
@@ -328,7 +328,6 @@ ui <- shinyUI(fluidPage(## title panel
               h5("Note: Term = GO term, Ont = ontology that the GO term belongs to (e.g. 'BP', 'CC' and 'MF'), N = number of genes in the GO term,
                  DE = number of genes in the DE set, P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
               # Button ########################## download button needs to be adjusted !! ############
-              downloadButton('downloadData1', 'Download data'),
               br(),
               br(),
               br(),
@@ -336,9 +335,16 @@ ui <- shinyUI(fluidPage(## title panel
               br(),
               br(),
               br(),
+              br(),
               fluidRow(column(width = 12,
               h4("Genes found in significant GO IDs"),
-              DT::dataTableOutput("table_5")))
+              h5("Download data of genes found in significant GO IDs"),
+              # br(), br(), br(),
+              downloadButton('downloadData1', 'Download data'),
+              br(),
+              br(),
+              br(),
+              DT::dataTableOutput("table_4")))
               )))),
               ########## fifth panel ##########
               tabPanel(title = "KEGG Pathway Enrichment Analysis",
@@ -365,11 +371,22 @@ ui <- shinyUI(fluidPage(## title panel
               h4("limma::kegga results table"),
               h5("This table displaying results of the KEGG pathway enrichment analysis. Note: specific KEGG pathways can be queried in the search bar."),
               # Button ############################### download button needs to be adjusted ! ############3
+              br(),
+              br(),
+              br(),
+              DT::dataTableOutput("table_5"),
+              br(),
+              br(),
+              br(),
+              br(),
+              h4("Genes found in significant KEGG terms"),
+              h5("Download data of genes found in significant GO IDs"),
+              # br(), br(), br(),
               downloadButton('downloadData2', 'Download data'),
               br(),
               br(),
               br(),
-              DT::dataTableOutput("table_4"))
+              DT::dataTableOutput("table_6"))
               )))
               )))
 ))
@@ -458,7 +475,7 @@ server <- function(input, output) {
 ## (i.e. the GO TERM with most sig. padj score). The reactive value will be used
 ## to generate a table of the list of genes corresponding to the row of the
 ## clicked GO term, furthermore the genes corresponding to the clicked GO term
-## will be highlighted in a volcano plot (TBA)
+## will be highlighted in a volcano plot
     
     click_value2 <- reactiveVal(value = 1, label = 1) 
     
@@ -470,11 +487,30 @@ server <- function(input, output) {
         } else {
             click_value2(newValue)
         }})
+
+######################## KEGG Pathway Gene Table ###############################
+## This reactive variable captures the row of the gene clicked which matches
+## the selected dataframe for the KEGGresults tab. The initial value is set to
+## 1, (i.e. the KEGG Pathway with most sig. padj score). The reactive value will
+## be used to generate a table of the list of genes corresponding to the row of
+## the clicked KEGG Pathway, furthermore the genes corresponding to the clicked
+## KEGG Pathway will be highlighted in a volcano plot
     
-    ## if for some reason you want to know the value of what the cursor is
-    ## clicking on, this reactive variable will display the output of that
+    click_value3 <- reactiveVal(value = 1, label = 1) 
+    
+    ## this reactive function records clicks a row of the results in GO table
+    observeEvent(input$table_5_rows_selected, ignoreNULL = TRUE, {
+        newValue <-  input$table_5_rows_selected
+        if(is.null(newValue)) {
+            click_value3(1)
+        } else {
+            click_value3(newValue)
+        }})
+    
+    ## if you want to know the value of what the cursor is clicking on, these
+    ## reactive variables will display the output of that
     # output$click_value <- renderText({click_value()})
-    output$click_value2 <- renderText({click_value2()}) ########################### CLEAN UP LATER ###################
+    # output$click_value2 <- renderText({click_value2()})
 
 #################### First plot (MA plot) ######################################
 ## This MA plot is generated automatically from dataset selected from dropdown,
@@ -546,7 +582,7 @@ server <- function(input, output) {
         list(src = filename, width = 800, height = 800)
     }, deleteFile = FALSE) 
     
-########################## Plot datatable DE results ###########################
+####################### Generate datatable DE results ##########################
 ## this table is generated from the dataset selected from dropdown, showing
 ## variables Gene, geneName, baseMean, log2FoldChange, pvalue, padj (arranged by
 ## highest padj), and only one row can be selected at a time
@@ -565,7 +601,7 @@ server <- function(input, output) {
 ## GO enrichment results
     
     input_4 <- reactive(selected_df2()[[2]])
-    output$table_3 <- DT::renderDataTable(input_4())
+    output$table_3 <- DT::renderDataTable(input_4(), selection = 'single')
 
 ######## Generate dynamic datatable of ENTREZ genes based on GO results ########
 ## this table is generated from a saved dataframe displaying the limma::goana
@@ -574,8 +610,10 @@ server <- function(input, output) {
     input_5 <- reactive(selected_df2()[[2]][click_value2(), ]$ENTREZID_in_term %>%
                         grepl(selected_df2()[[1]]$ENTREZID) %>% which())
     
-    output$table_5 <- DT::renderDataTable((selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% input_5(), ]))
-
+    output$table_4 <- DT::renderDataTable((selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% input_5(), ]))
+    
+    download_1 <- reactive((selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% input_5(), ]))
+    
 ############################### GO Volcano plot ################################
 ## This Volcano plot is generated automatically from dataset selected from the
 ## dropdown menu, with threshold at log2FoldChange > 1 and padj < 0.05. Points
@@ -583,37 +621,36 @@ server <- function(input, output) {
 ## selected genes corresponding to the GOID clicked (determined by user click
 ## input in the table below it) are highlighted in GREEN
 
-    output$plot_graph_4 <- renderPlot({ ############################################# HERE! ############
+    output$plot_graph_4 <- renderPlot({
         res_df <- as.data.frame(selected_df2()[[1]], na.rm = TRUE) 
         res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
         vol <- ggplot(data = res_df, aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
             geom_point(size = 0.5) +
-            # geom_point(data = selected_df1()[[1]][click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
+            geom_point(data = selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% input_5(), ],
+                       colour = "green", size = 0.7) +
             xlab("log2 fold change") + ylab("-log10 p-value") +
             theme(plot.title = element_text(hjust = 0.5))
         vol + scale_color_manual(values = c("#000000", "#FF0000"))
     })
 
-########################## Plot datatable KEGG results #########################
+######################### Generate datatable KEGG results ######################
 ## this table is generated from a saved dataframes displaying the limma::kegga
 ## KEGG enrichment results
     
     input_6 <- reactive(selected_df3()[[3]])
-    output$table_4 <- DT::renderDataTable(input_6())
+    output$table_5 <- DT::renderDataTable(input_6(), selection = 'single')
     
-    ############################################################################################## HERE! ############
+######## Generate dynamic datatable of ENTREZ genes based on KEGG results ######
+## this table is generated from a saved dataframe displaying the limma::kegga
+## KEGG term enrichment results
     
-    #### need to add ENTREZID for KEGG in results ##################################################################
+    input_7 <- reactive(selected_df3()[[3]][click_value3(), ]$ENTREZIDs_in_path %>%
+                            grepl(selected_df3()[[1]]$ENTREZID) %>% which())
     
-    ## dynamic input for KEGG
-    ## need to define click value 3
+    output$table_6 <- DT::renderDataTable((selected_df3()[[1]][selected_df3()[[1]]$ENTREZID %in% input_7(), ]))
     
-    # input_7 <- reactive(selected_df3()[[2]][click_value3(), ]$ENTREZID_in_term)
-    # output$entrez <- renderText({# unlist(strsplit(input_7(), ";")) %>% ## do we need to unlist?
-    #     stringr::str_replace_all(input_7(), ";", "|") %>%
-    #         stringr::str_detect(selected_df3()[[1]]$ENTREZID)
-    # })
-    
+    download_2 <- reactive((selected_df3()[[1]][selected_df3()[[1]]$ENTREZID %in% input_7(), ]))
+        
 ############################# KEGG Volcano plot ################################
 ## This Volcano plot is generated automatically from dataset selected from the
 ## dropdown menu, with threshold at log2FoldChange > 1 and padj < 0.05. Points
@@ -621,12 +658,13 @@ server <- function(input, output) {
 ## selected genes corresponding to the KEGG Pathway clicked (determined by user
 ## click input in the table below it) are highlighted in GREEN
     
-    output$plot_graph_5 <- renderPlot({ ############################################# HERE! ############
+    output$plot_graph_5 <- renderPlot({ 
         res_df <- as.data.frame(selected_df3()[[1]], na.rm = TRUE) 
         res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
         vol <- ggplot(data = res_df, aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
             geom_point(size = 0.5) +
-            # geom_point(data = selected_df1()[[1]][click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
+            geom_point(data = selected_df3()[[1]][selected_df3()[[1]]$ENTREZID %in% input_7(), ],
+                       colour = "green", size = 0.7) +
             xlab("log2 fold change") + ylab("-log10 p-value") +
             theme(plot.title = element_text(hjust = 0.5))
         vol + scale_color_manual(values = c("#000000", "#FF0000"))
@@ -644,8 +682,7 @@ server <- function(input, output) {
             paste("GOID_genes", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-            write.csv(selected_df2()[[1]]$ENTREZID, file, sep = ",",
-                      row.names = FALSE) ########## this needs to be changed ########## HERE ##########
+            write.csv(download_1(), file, sep = ",", row.names = FALSE)
         }
     )
     
@@ -655,8 +692,7 @@ server <- function(input, output) {
             paste("KEGG_path_genes", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-            write.csv(selected_df2()[[1]]$ENTREZID, file, sep = ",",
-                      row.names = FALSE) ########## this needs to be changed ########## HERE ##########
+            write.csv(download_2(), file, sep = ",", row.names = FALSE)
         }
     )
 

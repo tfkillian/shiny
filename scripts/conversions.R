@@ -69,6 +69,9 @@ go_vector <- lapply(go_list, as.vector)
 ezs <- sapply(go_vector, paste0, collapse = "|")
 go_df <- data.frame(GOID = names(go_vector), ENTREZID = ezs)
 
+GK_list <- as.list(GK)
+ezs <- sapply(GK_list, paste0, collapse = "|")
+
 ### then map GO terms to genes between tables via ENTREZID
 go_1 <- go_1 %>% dplyr::select(-ENTREZID_in_term)
 go_2 <- go_2 %>% dplyr::select(-ENTREZID_in_term)
@@ -90,12 +93,19 @@ go_2 <- go_2 %>% dplyr::select(-ENTREZID)
 go_3 <- go_3 %>% dplyr::select(-ENTREZID)
 go_4 <- go_4 %>% dplyr::select(-ENTREZID)
 
-##### to do later ############################################################
+###################### KEGG conversion ###################################
 
-# kegg_1
-# kegg_2
-# kegg_3
-# kegg_4
+#qq <- kegg_1 %>% left_join(path_id_kegg, by = "Pathway")
+
+kegg_1 <- kegg_1 %>% left_join(path_id_kegg, by = "Pathway")
+kegg_2 <- kegg_2 %>% left_join(path_id_kegg, by = "Pathway")
+kegg_3 <- kegg_3 %>% left_join(path_id_kegg, by = "Pathway")
+kegg_4 <- kegg_4 %>% left_join(path_id_kegg, by = "Pathway")
+
+names(kegg_1) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZIDs_in_path")
+names(kegg_2) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZIDs_in_path")
+names(kegg_3) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZIDs_in_path")
+names(kegg_4) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZIDs_in_path")
 
 saveRDS(dds_df_1, file = "../results/res1.rds")
 saveRDS(dds_df_2, file = "../results/res2.rds")
@@ -107,7 +117,7 @@ saveRDS(go_2, file = "../results/go_2.rds")
 saveRDS(go_3, file = "../results/go_3.rds")
 saveRDS(go_4, file = "../results/go_4.rds")
 
-# saveRDS(kegg_1, file = "./app/data/kegg_1.rds")
-# saveRDS(kegg_2, file = "./app/data/kegg_2.rds")
-# saveRDS(kegg_3, file = "./app/data/kegg_3.rds")
-# saveRDS(kegg_4, file = "./app/data/kegg_4.rds")
+saveRDS(kegg_1, file = "../results/kegg_1.rds")
+saveRDS(kegg_2, file = "../results/kegg_2.rds")
+saveRDS(kegg_3, file = "../results/kegg_3.rds")
+saveRDS(kegg_4, file = "../results/kegg_4.rds")
