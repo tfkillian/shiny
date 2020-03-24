@@ -109,7 +109,7 @@ library("shiny")
 library("dplyr")
 library("tidyr")
 library("ggplot2")
-library("stringr") ###### make sure that this works on the server ###################### do we use this?? ######
+# library("stringr") ###### make sure that this works on the server ###################### do we use this?? ######
 
 ####################### set current directory variables ########################
 ## The functions below streamline the variables that you must change between
@@ -142,7 +142,7 @@ loc_lib <- "~/R/x86_64-pc-linux-gnu-library/3.6"
 
 ## this is the path to the DE results on the server
 # serv_res <- paste0("/srv/shiny-private-server/cbio/", proj_name, "/app/data/")
-serv_res <- "/srv/shiny-private-server/cbio/test/results/"
+serv_res <- "/srv/shiny-private-server/cbio/test2/results/"
 # serv_res <- "/srv/shiny-private-server/cbio/test/app/data/"
 
 ## this is the path to the DE results on your local
@@ -172,8 +172,8 @@ setPaths <- function(x) {
 ################################################################################
 #### if this is running on the server, change these functions to TRUE !!!!! ####
 ### if this is running on a local machine, then set these functions to FALSE ###
-myDirectory <- setPaths(FALSE)
-.libPaths(setLibs(FALSE))
+myDirectory <- setPaths(TRUE)
+.libPaths(setLibs(TRUE))
 ################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
