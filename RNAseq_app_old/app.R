@@ -80,10 +80,16 @@ read_count_matrix <- function(dds_df) {
 }
 
 ## relative path on local machine
-dds_df_1 <- read_count_matrix("~/tmp/201910_FATH_RNA1/results/res1_F_only_201910_FATH_RNA1.rds")
-dds_df_2 <- read_count_matrix("~/tmp/201910_FATH_RNA1/results/res1_H_only_201910_FATH_RNA1.rds")
-dds_df_3 <- read_count_matrix("~/tmp/201910_FATH_RNA1/results/res1_S_only_201910_FATH_RNA1.rds")
-dds_df_4 <- read_count_matrix("~/tmp/201910_FATH_RNA1/results/res1_pH_only_201910_FATH_RNA1.rds")
+# dds_df_1 <- read_count_matrix("~/tmp/201910_FATH_RNA1/results/res1_F_only_201910_FATH_RNA1.rds")
+# dds_df_2 <- read_count_matrix("~/tmp/201910_FATH_RNA1/results/res1_H_only_201910_FATH_RNA1.rds")
+# dds_df_3 <- read_count_matrix("~/tmp/201910_FATH_RNA1/results/res1_S_only_201910_FATH_RNA1.rds")
+# dds_df_4 <- read_count_matrix("~/tmp/201910_FATH_RNA1/results/res1_pH_only_201910_FATH_RNA1.rds")
+
+dds_df_1 <- read_count_matrix("~/tmp/shiny/results/res1.rds")
+dds_df_2 <- read_count_matrix("~/tmp/shiny/results/res2.rds")
+dds_df_3 <- read_count_matrix("~/tmp/shiny/results/res3.rds")
+dds_df_4 <- read_count_matrix("~/tmp/shiny/results/res4.rds")
+
 
 ## absolute path on server
 # dds_df_1 <- read_count_matrix("/srv/shiny-private-server/cbio/201910_FATH_RNA1/results/res1_F_only_201910_FATH_RNA1.rds")

@@ -66,11 +66,8 @@ dds_df_4 <- dds_df_4 %>% dplyr::select(-neg_log10_padj) %>%
 go_list <- mapIds(org.Hs.eg.db, keys(org.Hs.eg.db, "GO"),
                   "ENTREZID", "GO", multiVals = "list")
 go_vector <- lapply(go_list, as.vector)
-ezs <- sapply(go_vector, paste0, collapse = "|")
+ezs <- sapply(go_vector, paste0, collapse = ";")
 go_df <- data.frame(GOID = names(go_vector), ENTREZID = ezs)
-
-GK_list <- as.list(GK)
-ezs <- sapply(GK_list, paste0, collapse = "|")
 
 ### then map GO terms to genes between tables via ENTREZID
 go_1 <- go_1 %>% dplyr::select(-ENTREZID_in_term)
@@ -94,18 +91,36 @@ go_3 <- go_3 %>% dplyr::select(-ENTREZID)
 go_4 <- go_4 %>% dplyr::select(-ENTREZID)
 
 ###################### KEGG conversion ###################################
+# kegg_organism <- "mmu"
+# GK <- getGeneKEGGLinks(species.KEGG = kegg_organism)
+# GK_list <- as.list(GK)
+# ezs <- sapply(GK_list, paste0, collapse = ";")
 
-#qq <- kegg_1 %>% left_join(path_id_kegg, by = "Pathway")
+## get all KEGG PathwayIDs, and all ENTREZ IDs associated with each PathwayID
+GK_desc <- getKEGGPathwayNames(species.KEGG = kegg_organism, remove = TRUE)
+
+GK_col <- GK %>% group_by(PathwayID) %>% summarise(GeneIDs = paste(GeneID, collapse = ";"))
+
+path_id_kegg <- dplyr::full_join(GK_col, GK_desc, by = "PathwayID")
+names(path_id_kegg) <- c("PathwayID", "ENTREZ_GeneIDs", "Pathway")
+# saveRDS(as.data.frame(path_id_kegg), file = "./app/data/kegg_path_2_id_mouse.rds")
+
+kegg_1 <- kegg_1 %>% dplyr::select(-ENTREZIDs_in_path) %>% dplyr::select(-PathwayID)
+kegg_2 <- kegg_2 %>% dplyr::select(-ENTREZIDs_in_path) %>% dplyr::select(-PathwayID)
+kegg_3 <- kegg_3 %>% dplyr::select(-ENTREZIDs_in_path) %>% dplyr::select(-PathwayID)
+kegg_4 <- kegg_4 %>% dplyr::select(-ENTREZIDs_in_path) %>% dplyr::select(-PathwayID)
 
 kegg_1 <- kegg_1 %>% left_join(path_id_kegg, by = "Pathway")
 kegg_2 <- kegg_2 %>% left_join(path_id_kegg, by = "Pathway")
 kegg_3 <- kegg_3 %>% left_join(path_id_kegg, by = "Pathway")
 kegg_4 <- kegg_4 %>% left_join(path_id_kegg, by = "Pathway")
 
-names(kegg_1) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZIDs_in_path")
-names(kegg_2) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZIDs_in_path")
-names(kegg_3) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZIDs_in_path")
-names(kegg_4) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZIDs_in_path")
+names(kegg_1) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
+names(kegg_2) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
+names(kegg_3) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
+names(kegg_4) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
+
+############################# save ######################################
 
 saveRDS(dds_df_1, file = "../results/res1.rds")
 saveRDS(dds_df_2, file = "../results/res2.rds")

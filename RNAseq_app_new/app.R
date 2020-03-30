@@ -109,7 +109,7 @@ library("shiny")
 library("dplyr")
 library("tidyr")
 library("ggplot2")
-# library("stringr") ###### make sure that this works on the server ###################### do we use this?? ######
+library("stringr") ###### make sure that this works on the server ##############
 
 ####################### set current directory variables ########################
 ## The functions below streamline the variables that you must change between
@@ -172,8 +172,8 @@ setPaths <- function(x) {
 ################################################################################
 #### if this is running on the server, change these functions to TRUE !!!!! ####
 ### if this is running on a local machine, then set these functions to FALSE ###
-myDirectory <- setPaths(FALSE)
-.libPaths(setLibs(FALSE))
+myDirectory <- setPaths(TRUE)
+.libPaths(setLibs(TRUE))
 ################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
@@ -205,24 +205,24 @@ col_1 <- readRDS(paste0(myDirectory, "col_4.rds"))
 ## NOTE:: this MUST be the absolute path to work on the server
 pca_1 <- (paste0(myDirectory, "PCA4.png"))
 
-############################################################################################## HERE! ############
+## NOTE: in order for the dynamic GO and KEGG tables to work, the results MUST
+## have ENTREZ IDs as a column in each results dataframe!!!
+
+########################################################################## FIX HERE! ############
 ## GO and KEGG need to be arranged by %>% arrange(P.ADJ.DE)
 ## need to calculate P.ADJ.DE for these files.
 
-## NOTE: in order for the dynamic GO and KEGG tables to work, the results must
-## have ENTREZ IDs as a column in each results dataframe!!!
-
 ## saved limma::goana GO results
-go_1 <- readRDS(paste0(myDirectory, "go_1.rds")) # %>% arrange(P.DE)
-go_2 <- readRDS(paste0(myDirectory, "go_2.rds")) # %>% arrange(P.DE)
-go_3 <- readRDS(paste0(myDirectory, "go_3.rds")) # %>% arrange(P.DE)
-go_4 <- readRDS(paste0(myDirectory, "go_4.rds")) # %>% arrange(P.DE)
+go_1 <- readRDS(paste0(myDirectory, "go_1.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+go_2 <- readRDS(paste0(myDirectory, "go_2.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+go_3 <- readRDS(paste0(myDirectory, "go_3.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+go_4 <- readRDS(paste0(myDirectory, "go_4.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
 
 ## saved limma::kegga GO results
-kegg_1 <- readRDS(paste0(myDirectory, "kegg_1.rds")) %>% arrange(P.DE)
-kegg_2 <- readRDS(paste0(myDirectory, "kegg_2.rds")) %>% arrange(P.DE)
-kegg_3 <- readRDS(paste0(myDirectory, "kegg_3.rds")) %>% arrange(P.DE)
-kegg_4 <- readRDS(paste0(myDirectory, "kegg_4.rds")) %>% arrange(P.DE)
+kegg_1 <- readRDS(paste0(myDirectory, "kegg_1.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+kegg_2 <- readRDS(paste0(myDirectory, "kegg_2.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+kegg_3 <- readRDS(paste0(myDirectory, "kegg_3.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+kegg_4 <- readRDS(paste0(myDirectory, "kegg_4.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
 
 ###################### link results files as lists #############################
 ## to "link" all results dataframes so that they can be selected and appear
@@ -244,7 +244,8 @@ list_4 <- list(dds_df_4, go_4, kegg_4)
 # required, however "list_1" etc should not change
 
 ui <- shinyUI(fluidPage(## title panel
-              titlePanel(paste0("Explore RNAseq Analysis of ", proj_name, " data with Shiny")),
+              titlePanel(paste0("Explore RNAseq Analysis of ", proj_name,
+                                " data with Shiny")),
               mainPanel(tabsetPanel(type = "tabs",
                           
               ########## first panel ##########
@@ -268,7 +269,8 @@ ui <- shinyUI(fluidPage(## title panel
               
               ########## third panel ##########              
               tabPanel("DE Analysis",
-              h4(paste0("Interactive plots illustrating the results of the DESeq2 analysis of the ", proj_name, " data")),
+              h4(paste0("Interactive plots illustrating the results of the DESeq2
+                        analysis of the ", proj_name, " data")),
               selectInput(inputId = "deseq",
               label = "Please choose comparison",
               choices = c("Comparison 1" = "list_1",
@@ -297,7 +299,8 @@ ui <- shinyUI(fluidPage(## title panel
               ## third panel row 2
               fluidRow(column(width = 12,
               h4("DE results table"),
-              h5("This table displays results of the statistic analysis. Note: specific genes can be queried in the search bar."),
+              h5("This table displays results of the statistic analysis. Note:
+                 specific genes can be queried in the search bar."),
               DT::dataTableOutput("table_2"),
               align = "left")
               ))),
@@ -305,10 +308,12 @@ ui <- shinyUI(fluidPage(## title panel
               ########## fourth panel ##########
               tabPanel(title = "GO Term Enrichment Analysis",
               fluidRow(column(width = 12,
-              h4(paste0("GO Enrichment Analysis was performed using limma::goana(), which tests for over-representation of gene
-                 ontology (GO) terms for specified enriched sets of genes. The Enriched Gene Set ", thresh_vol, " This enriched
-                 gene set is subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe', which
-                 is defined as all genes from the original count matrix that possess ENTREZ identifiers.")),
+              h4(paste0("GO Enrichment Analysis was performed using limma::goana(), which tests
+                        for over-representation of gene ontology (GO) terms for specified enriched
+                        sets of genes. The Enriched Gene Set ", thresh_vol, " This enriched gene
+                        set is subjected to a hypergeometric test for differential enrichment (DE)
+                        against a gene 'universe', which is defined as all genes from the original
+                        count matrix that possess ENTREZ identifiers.")),
               selectInput(inputId = "go",
                           label = "Please choose comparison",
                           choices = c("Comparison 1" = "list_1",
@@ -317,6 +322,12 @@ ui <- shinyUI(fluidPage(## title panel
                                       "Comparison 4" = "list_4")),
               # fourth panel row 1
               fluidRow(column(width = 12,
+              h5("This is the string of ENTREZ IDs on each row clicked in GO results"),
+              textOutput("entrez_1"), ## this is the string of ENTREZ IDs on each row clicked in GO results
+              br(),
+              h5("This is the string of ENTREZ IDs on each row clicked in DESeq2 results corresponding to above"),
+              textOutput("entrez_2"), ## this is the string of ENTREZ IDs on each row clicked in dds results
+              br(),
               h4("Volcano Plot"),
               h5(paste0(thresh_vol)),
               plotOutput("plot_graph_4", height = 350))),
@@ -324,10 +335,12 @@ ui <- shinyUI(fluidPage(## title panel
               # fourth panel row 2
               fluidRow(column(width = 12,
               h4("limma::goana results table"),
-              h5("This table displaying results of the GO term enrichment analysis. Note: specific GO terms can be queried in the search bar."),
-              h5("Note: Term = GO term, Ont = ontology that the GO term belongs to (e.g. 'BP', 'CC' and 'MF'), N = number of genes in the GO term,
-                 DE = number of genes in the DE set, P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
-              # Button ########################## download button needs to be adjusted !! ############
+              h5("This table displaying results of the GO term enrichment analysis. Note: specific
+                 GO terms can be queried in the search bar."),
+              h5("Note: Term = GO term, Ont = ontology that the GO term belongs to (e.g. 'BP', 'CC'
+                 and 'MF'), N = number of genes in the GO term, DE = number of genes in the DE set,
+                 P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
+              # Button ########################## download button needs to be adjusted !! ########
               br(),
               br(),
               br(),
@@ -349,9 +362,12 @@ ui <- shinyUI(fluidPage(## title panel
               ########## fifth panel ##########
               tabPanel(title = "KEGG Pathway Enrichment Analysis",
               fluidRow(column(width = 12,
-              h4(paste0("KEGG Pathway Enrichment Analysis was performed using limma::kegga(), which tests for over-representation of KEGG pathways in one or more sets of genes.
-                 The Enriched Gene Set ", thresh_vol, " This enriched gene set is subjected to a hypergeometric test for differential enrichment (DE) against a gene 'universe',
-                 which is defined as all genes from the original count matrix that possess ENTREZ identifiers.")),
+              h4(paste0("KEGG Pathway Enrichment Analysis was performed using limma::kegga(), which
+                        tests for over-representation of KEGG pathways in one or more sets of genes.
+                        The Enriched Gene Set ", thresh_vol, " This enriched gene set is subjected
+                        to a hypergeometric test for differential enrichment (DE) against a gene
+                        'universe', which is defined as all genes from the original count matrix
+                        that possess ENTREZ identifiers.")),
               selectInput(inputId = "kegg",
                           label = "Please choose comparison",
                           choices = c("Comparison 1" = "list_1",
@@ -360,6 +376,12 @@ ui <- shinyUI(fluidPage(## title panel
                                       "Comparison 4" = "list_4")),
               # fifth panel row 1
               fluidRow(column(width = 12,
+              h5("This is the string of ENTREZ IDs on each row clicked in KEGG results"),
+              textOutput("entrez_3"), ## this is the string of ENTREZ IDs on each row clicked in GO results
+              br(),
+              h5("This is the string of ENTREZ IDs on each row clicked in DESeq2 results corresponding to above"),
+              textOutput("entrez_4"), ## this is the string of ENTREZ IDs on each row clicked in dds results
+              br(),
               h4("Volcano Plot"),
               h5(paste0(thresh_vol)),
               plotOutput("plot_graph_5", height = 350))),
@@ -369,8 +391,9 @@ ui <- shinyUI(fluidPage(## title panel
               ## fifth panel row 2
               fluidRow(column(width = 12,
               h4("limma::kegga results table"),
-              h5("This table displaying results of the KEGG pathway enrichment analysis. Note: specific KEGG pathways can be queried in the search bar."),
-              # Button ############################### download button needs to be adjusted ! ############3
+              h5("This table displaying results of the KEGG pathway enrichment analysis. Note:
+                 specific KEGG pathways can be queried in the search bar."),
+              # Button ############################### download button needs to be adjusted ! #####
               br(),
               br(),
               br(),
@@ -392,8 +415,10 @@ ui <- shinyUI(fluidPage(## title panel
 ))
 
 ################################## server ######################################
-## this function defines the Shiny "server" all functions that the UI refers to
-## that involve reactive variables go here
+## This function defines the Shiny server. All reactive or static functions that
+## generate output, such as plots, images and tables which are passed to the UI
+## for display must be declared somewhere below:
+
 server <- function(input, output) {
     
 ################## selecting dataset from dropdown menu DESEQ ##################
@@ -438,35 +463,37 @@ server <- function(input, output) {
 ## unique identifier for this reactive variable to function correctly
      
     ## reactive click variable used to    
-    click_value <- reactiveVal(value = 1, label = 1)
+    click_value_1 <- reactiveVal(value = 1, label = 1)
     
     ## this reactive function records clicks on the DESeq2 tab MA plot 
     observeEvent(input$plot1_click, ignoreNULL = TRUE, {
-                 point_gene <- nearPoints(selected_df1()[[1]], input$plot1_click, threshold = 1000)
+                 point_gene <- nearPoints(selected_df1()[[1]],
+                                          input$plot1_click, threshold = 1000)
                  newValue <- which(grepl(point_gene$Gene, selected_df1()[[1]]$Gene))
                  if(is.null(newValue)) {
-                 click_value(1) 
+                 click_value_1(1) 
                  } else {
-                 click_value(newValue)     
+                 click_value_1(newValue)     
                  }})
     
     ## this reactive function records clicks on the DESeq2 tab Volcano plot 
     observeEvent(input$plot2_click, ignoreNULL = TRUE, {
-                 point_gene <- nearPoints(selected_df1()[[1]], input$plot2_click, threshold = 1000)
+                 point_gene <- nearPoints(selected_df1()[[1]],
+                                          input$plot2_click, threshold = 1000)
                  newValue <- which(grepl(point_gene$Gene, selected_df1()[[1]]$Gene))
                  if(is.null(newValue)) {
-                 click_value(1)
+                 click_value_1(1)
                  } else {
-                 click_value(newValue)
+                 click_value_1(newValue)
                  }})
     
     ## this reactive function records clicks a row of the DESeq2 table results 
     observeEvent(input$table_2_rows_selected, ignoreNULL = TRUE, {
                  newValue <-  input$table_2_rows_selected
                  if(is.null(newValue)) {
-                 click_value(1)
+                 click_value_1(1)
                  } else {
-                 click_value(newValue)
+                 click_value_1(newValue)
                  }})
     
 ########################## GO TERM Gene Table ##################################
@@ -477,15 +504,15 @@ server <- function(input, output) {
 ## clicked GO term, furthermore the genes corresponding to the clicked GO term
 ## will be highlighted in a volcano plot
     
-    click_value2 <- reactiveVal(value = 1, label = 1) 
+    click_value_2 <- reactiveVal(value = 1, label = 1) 
     
     ## this reactive function records clicks a row of the results in GO table
     observeEvent(input$table_3_rows_selected, ignoreNULL = TRUE, {
         newValue <-  input$table_3_rows_selected
         if(is.null(newValue)) {
-            click_value2(1)
+            click_value_2(1)
         } else {
-            click_value2(newValue)
+            click_value_2(newValue)
         }})
 
 ######################## KEGG Pathway Gene Table ###############################
@@ -496,21 +523,24 @@ server <- function(input, output) {
 ## the clicked KEGG Pathway, furthermore the genes corresponding to the clicked
 ## KEGG Pathway will be highlighted in a volcano plot
     
-    click_value3 <- reactiveVal(value = 1, label = 1) 
+    click_value_3 <- reactiveVal(value = 1, label = 1) 
     
     ## this reactive function records clicks a row of the results in GO table
     observeEvent(input$table_5_rows_selected, ignoreNULL = TRUE, {
         newValue <-  input$table_5_rows_selected
         if(is.null(newValue)) {
-            click_value3(1)
+            click_value_3(1)
         } else {
-            click_value3(newValue)
+            click_value_3(newValue)
         }})
+
+######################### Value of table clicks ################################    
+## If you want to know the value of what the cursor is clicking on, when
+## clicking on a table row, these reactive variables will display the output
     
-    ## if you want to know the value of what the cursor is clicking on, these
-    ## reactive variables will display the output of that
-    # output$click_value <- renderText({click_value()})
-    # output$click_value2 <- renderText({click_value2()})
+    # output$click_value_1 <- renderText({click_value_1()})
+    # output$click_value_2 <- renderText({click_value_2()})
+    # output$click_value_3 <- renderText({click_value_3()})
 
 #################### First plot (MA plot) ######################################
 ## This MA plot is generated automatically from dataset selected from dropdown,
@@ -521,8 +551,10 @@ server <- function(input, output) {
     output$plot_graph_1 <- renderPlot({
         ggplot(selected_df1()[[1]], aes(x = baseMean, y = log2FoldChange)) +
         geom_point(aes(colour = padj < thresh_padj), size = 0.5) +
-        geom_point(data = selected_df1()[[1]][click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
-        scale_colour_manual(name = paste0('padj < ', thresh_padj), values = setNames(c('red', 'black'), c(TRUE, FALSE))) +
+        geom_point(data = selected_df1()[[1]][click_value_1(), ],
+                   colour = "blue", alpha = 0.4, size = 5) +
+        scale_colour_manual(name = paste0('padj < ', thresh_padj),
+                            values = setNames(c('red', 'black'), c(TRUE, FALSE))) +
         scale_x_continuous(trans = "log10", limits = c(0.1, 300000)) +
         geom_smooth(colour = "red") +
         geom_abline(slope = 0,intercept = 0, colour = "blue") +
@@ -541,7 +573,8 @@ server <- function(input, output) {
         res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
         vol <- ggplot(data = res_df, aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
                geom_point(size = 0.5) +
-               geom_point(data = selected_df1()[[1]][click_value(), ], colour = "blue", alpha = 0.4, size = 5) +
+               geom_point(data = selected_df1()[[1]][click_value_1(), ],
+                          colour = "blue", alpha = 0.4, size = 5) +
                xlab("log2 fold change") + ylab("-log10 p-value") +
                theme(plot.title = element_text(hjust = 0.5))
         vol + scale_color_manual(values = c("#000000", "#FF0000"))
@@ -555,7 +588,7 @@ server <- function(input, output) {
 ## groups that are being compared. If pseudocounts are desired, change to log1p
 
         output$plot_graph_3 <- renderPlot({ 
-        as_tibble(selected_df1()[[1]][click_value(), ]) %>% 
+        as_tibble(selected_df1()[[1]][click_value_1(), ]) %>% 
         dplyr::select(Gene, geneName,
                       starts_with("F65"), starts_with("H65"), starts_with("S65"),
                       starts_with("F74"), starts_with("H74"), starts_with("S74")) %>%
@@ -563,7 +596,7 @@ server <- function(input, output) {
         mutate(group = substr(sample, 1, 4)) %>% 
         ggplot(aes(x = group, y = counts, color = group)) +
         geom_point(size = 3) +
-        ggtitle(selected_df1()[[1]][click_value(), ]$geneName)
+        ggtitle(selected_df1()[[1]][click_value_1(), ]$geneName)
     })
     
 ########################## Plot datatable experimental coldata #################
@@ -606,13 +639,26 @@ server <- function(input, output) {
 ######## Generate dynamic datatable of ENTREZ genes based on GO results ########
 ## this table is generated from a saved dataframe displaying the limma::goana
 ## GO enrichment results
-
-    input_5 <- reactive(selected_df2()[[2]][click_value2(), ]$ENTREZID_in_term %>%
-                        grepl(selected_df2()[[1]]$ENTREZID) %>% which())
     
+    ## reactive variable that captures string of ENTREZIDs of the GO result table
+    ## and finds which of these ENTREZIDs are in the DESeq2 results table
+    input_5 <- reactive(selected_df2()[[2]][click_value_2(), ]$ENTREZID_in_term %>%
+                        strsplit(";") %>% unlist())
+    
+    ## reactive variable that generates a table of the of ENTREZIDs in the DESeq2
+    ## results table that correspond to a clicked row of the GO result table
     output$table_4 <- DT::renderDataTable((selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% input_5(), ]))
     
+    ## reactive variable that generates a downloadable .csv file of the table of
+    ## the of ENTREZIDs in the DESeq2 results table that correspond to a clicked
+    ## row of the GO result table
     download_1 <- reactive((selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% input_5(), ]))
+    
+    #### text output of ENTREZIDs from selected results corresponding to GO clicked ######
+    output$entrez_1 <- reactive(input_5())
+    
+    #### text output of ENTREZIDs from selected results corresponding to GO clicked ######
+    output$entrez_2 <- reactive(download_1() %>% dplyr::select(ENTREZID) %>% toString())
     
 ############################### GO Volcano plot ################################
 ## This Volcano plot is generated automatically from dataset selected from the
@@ -644,13 +690,28 @@ server <- function(input, output) {
 ## this table is generated from a saved dataframe displaying the limma::kegga
 ## KEGG term enrichment results
     
-    input_7 <- reactive(selected_df3()[[3]][click_value3(), ]$ENTREZIDs_in_path %>%
-                            grepl(selected_df3()[[1]]$ENTREZID) %>% which())
+    ## reactive variable that captures string of ENTREZIDs of the KEGG result table
+    ## and finds which of these ENTREZIDs are in the DESeq2 results table
+    input_7 <- reactive(selected_df3()[[3]][click_value_3(), ]$ENTREZID_in_path %>%
+                        strsplit(";") %>% unlist())
     
+    ## reactive variable that generates a table of the of ENTREZIDs in the DESeq2
+    ## results table that correspond to a clicked row of the KEGG result table
     output$table_6 <- DT::renderDataTable((selected_df3()[[1]][selected_df3()[[1]]$ENTREZID %in% input_7(), ]))
     
+    ## reactive variable that generates a downloadable .csv file of the table of
+    ## the of ENTREZIDs in the DESeq2 results table that correspond to a clicked
+    ## row of the GO result table
     download_2 <- reactive((selected_df3()[[1]][selected_df3()[[1]]$ENTREZID %in% input_7(), ]))
-        
+    
+    #### text output of ENTREZIDs from selected results corresponding to KEGG
+    ## pathway clicked ######
+    output$entrez_3 <- reactive(input_7())
+    
+    #### text output of ENTREZIDs from selected results corresponding to KEGG
+    ## pathwayclicked ######
+    output$entrez_4 <- reactive(download_2() %>% select(ENTREZID) %>% toString())
+    
 ############################# KEGG Volcano plot ################################
 ## This Volcano plot is generated automatically from dataset selected from the
 ## dropdown menu, with threshold at log2FoldChange > 1 and padj < 0.05. Points
