@@ -91,34 +91,56 @@ go_3 <- go_3 %>% dplyr::select(-ENTREZID)
 go_4 <- go_4 %>% dplyr::select(-ENTREZID)
 
 ###################### KEGG conversion ###################################
+# https://www.researchgate.net/post/How_i_can_get_a_list_of_KEGG_pathways_and_its_list_of_genes
+library("org.Hs.eg.db")
+mapped <- mappedkeys(org.Hs.egPATH2EG)
+L <- as.list(org.Hs.egPATH2EG[mapped])
+Kegg_ID <- names(L)
+Gene_IDs <- sapply(L, paste, collapse = ";")
+kegg_genes <- cbind(Kegg_ID, Gene_IDs)
+kegg_genes <- as.data.frame(kegg_genes)
+names(kegg_genes) <- c("PathwayID", "ENTREZID_in_path")
+rownames(kegg_genes) <- NULL
+path_id_kegg <- kegg_genes
+# write.table(cbind(Kegg_ID, Gene_IDs), file="KEGG to Genes.txt", sep="\t", row.names=FALSE, col.names=FALSE)
+
+### this method seems to provide erroneous ENRTEZIDs 
 # kegg_organism <- "mmu"
 # GK <- getGeneKEGGLinks(species.KEGG = kegg_organism)
 # GK_list <- as.list(GK)
 # ezs <- sapply(GK_list, paste0, collapse = ";")
 
 ## get all KEGG PathwayIDs, and all ENTREZ IDs associated with each PathwayID
-GK_desc <- getKEGGPathwayNames(species.KEGG = kegg_organism, remove = TRUE)
-
-GK_col <- GK %>% group_by(PathwayID) %>% summarise(GeneIDs = paste(GeneID, collapse = ";"))
-
-path_id_kegg <- dplyr::full_join(GK_col, GK_desc, by = "PathwayID")
-names(path_id_kegg) <- c("PathwayID", "ENTREZ_GeneIDs", "Pathway")
+# GK_desc <- getKEGGPathwayNames(species.KEGG = kegg_organism, remove = TRUE)
+# GK_col <- GK %>% group_by(PathwayID) %>% summarise(GeneIDs = paste(GeneID, collapse = ";"))
+# path_id_kegg <- dplyr::full_join(GK_col, GK_desc, by = "PathwayID")
+# names(path_id_kegg) <- c("PathwayID", "ENTREZ_GeneIDs", "Pathway")
 # saveRDS(as.data.frame(path_id_kegg), file = "./app/data/kegg_path_2_id_mouse.rds")
 
-kegg_1 <- kegg_1 %>% dplyr::select(-ENTREZIDs_in_path) %>% dplyr::select(-PathwayID)
-kegg_2 <- kegg_2 %>% dplyr::select(-ENTREZIDs_in_path) %>% dplyr::select(-PathwayID)
-kegg_3 <- kegg_3 %>% dplyr::select(-ENTREZIDs_in_path) %>% dplyr::select(-PathwayID)
-kegg_4 <- kegg_4 %>% dplyr::select(-ENTREZIDs_in_path) %>% dplyr::select(-PathwayID)
+# kegg_1$PathwayID <- gsub("path:mmu", "", kegg_1$PathwayID)
+# kegg_2$PathwayID <- gsub("path:mmu", "", kegg_2$PathwayID)
+# kegg_3$PathwayID <- gsub("path:mmu", "", kegg_3$PathwayID)
+# kegg_4$PathwayID <- gsub("path:mmu", "", kegg_4$PathwayID)
 
-kegg_1 <- kegg_1 %>% left_join(path_id_kegg, by = "Pathway")
-kegg_2 <- kegg_2 %>% left_join(path_id_kegg, by = "Pathway")
-kegg_3 <- kegg_3 %>% left_join(path_id_kegg, by = "Pathway")
-kegg_4 <- kegg_4 %>% left_join(path_id_kegg, by = "Pathway")
+kegg_1 <- kegg_1 %>% dplyr::select(-ENTREZID_in_path) # %>% dplyr::select(-PathwayID)
+kegg_2 <- kegg_2 %>% dplyr::select(-ENTREZID_in_path) # %>% dplyr::select(-PathwayID)
+kegg_3 <- kegg_3 %>% dplyr::select(-ENTREZID_in_path) # %>% dplyr::select(-PathwayID)
+kegg_4 <- kegg_4 %>% dplyr::select(-ENTREZID_in_path) # %>% dplyr::select(-PathwayID)
 
-names(kegg_1) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
-names(kegg_2) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
-names(kegg_3) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
-names(kegg_4) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
+kegg_1 <- kegg_1 %>% left_join(path_id_kegg, by = "PathwayID")
+kegg_2 <- kegg_2 %>% left_join(path_id_kegg, by = "PathwayID")
+kegg_3 <- kegg_3 %>% left_join(path_id_kegg, by = "PathwayID")
+kegg_4 <- kegg_4 %>% left_join(path_id_kegg, by = "PathwayID")
+
+kegg_1$ENTREZID_in_path <- as.character(kegg_1$ENTREZID_in_path)
+kegg_2$ENTREZID_in_path <- as.character(kegg_2$ENTREZID_in_path)
+kegg_3$ENTREZID_in_path <- as.character(kegg_3$ENTREZID_in_path)
+kegg_4$ENTREZID_in_path <- as.character(kegg_4$ENTREZID_in_path)
+
+# names(kegg_1) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
+# names(kegg_2) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
+# names(kegg_3) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
+# names(kegg_4) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
 
 ############################# save ######################################
 

@@ -172,8 +172,8 @@ setPaths <- function(x) {
 ################################################################################
 #### if this is running on the server, change these functions to TRUE !!!!! ####
 ### if this is running on a local machine, then set these functions to FALSE ###
-myDirectory <- setPaths(TRUE)
-.libPaths(setLibs(TRUE))
+myDirectory <- setPaths(FALSE)
+.libPaths(setLibs(FALSE))
 ################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
@@ -322,10 +322,10 @@ ui <- shinyUI(fluidPage(## title panel
                                       "Comparison 4" = "list_4")),
               # fourth panel row 1
               fluidRow(column(width = 12,
-              h5("This is the string of ENTREZ IDs on each row clicked in GO results"),
+              h5("These are all of ENTREZ IDs found on the selected row in GO results"),
               textOutput("entrez_1"), ## this is the string of ENTREZ IDs on each row clicked in GO results
               br(),
-              h5("This is the string of ENTREZ IDs on each row clicked in DESeq2 results corresponding to above"),
+              h5("These are all ENTREZ IDs in the DESeq2 results corresponding to above"),
               textOutput("entrez_2"), ## this is the string of ENTREZ IDs on each row clicked in dds results
               br(),
               h4("Volcano Plot"),
@@ -376,10 +376,10 @@ ui <- shinyUI(fluidPage(## title panel
                                       "Comparison 4" = "list_4")),
               # fifth panel row 1
               fluidRow(column(width = 12,
-              h5("This is the string of ENTREZ IDs on each row clicked in KEGG results"),
+              h5("These are all of ENTREZ IDs found on the selected row in KEGG results"),
               textOutput("entrez_3"), ## this is the string of ENTREZ IDs on each row clicked in GO results
               br(),
-              h5("This is the string of ENTREZ IDs on each row clicked in DESeq2 results corresponding to above"),
+              h5("These are all ENTREZ IDs in the DESeq2 results corresponding to above"),
               textOutput("entrez_4"), ## this is the string of ENTREZ IDs on each row clicked in dds results
               br(),
               h4("Volcano Plot"),
@@ -643,7 +643,7 @@ server <- function(input, output) {
     ## reactive variable that captures string of ENTREZIDs of the GO result table
     ## and finds which of these ENTREZIDs are in the DESeq2 results table
     input_5 <- reactive(selected_df2()[[2]][click_value_2(), ]$ENTREZID_in_term %>%
-                        strsplit(";") %>% unlist())
+                        strsplit(";") %>% unlist() %>% na.exclude())
     
     ## reactive variable that generates a table of the of ENTREZIDs in the DESeq2
     ## results table that correspond to a clicked row of the GO result table
@@ -693,7 +693,8 @@ server <- function(input, output) {
     ## reactive variable that captures string of ENTREZIDs of the KEGG result table
     ## and finds which of these ENTREZIDs are in the DESeq2 results table
     input_7 <- reactive(selected_df3()[[3]][click_value_3(), ]$ENTREZID_in_path %>%
-                        strsplit(";") %>% unlist())
+                        strsplit(";") %>% unlist() %>% na.exclude()
+                        )
     
     ## reactive variable that generates a table of the of ENTREZIDs in the DESeq2
     ## results table that correspond to a clicked row of the KEGG result table
@@ -710,7 +711,7 @@ server <- function(input, output) {
     
     #### text output of ENTREZIDs from selected results corresponding to KEGG
     ## pathwayclicked ######
-    output$entrez_4 <- reactive(download_2() %>% select(ENTREZID) %>% toString())
+    output$entrez_4 <- reactive(download_2() %>% dplyr::select(ENTREZID) %>% toString())
     
 ############################# KEGG Volcano plot ################################
 ## This Volcano plot is generated automatically from dataset selected from the
