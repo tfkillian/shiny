@@ -109,7 +109,6 @@ library("shiny")
 library("dplyr")
 library("tidyr")
 library("ggplot2")
-library("stringr") ###### make sure that this works on the server ##############
 
 ####################### set current directory variables ########################
 ## The functions below streamline the variables that you must change between
