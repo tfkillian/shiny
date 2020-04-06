@@ -69,6 +69,19 @@ go_vector <- lapply(go_list, as.vector)
 ezs <- sapply(go_vector, paste0, collapse = ";")
 go_df <- data.frame(GOID = names(go_vector), ENTREZID = ezs)
 
+
+#mapIds(org.Hs.eg.db, Rkeys(org.Hs.egSYMBOL), "GO","SYMBOL", multiVals = getgoterms)
+
+# sym2go <- select(org.Hs.eg.db, "GO", "SYMBOL")
+# go2term <- select(GO.db, sym2go$GO, "TERM", "GOID")
+
+
+# go_list <- mapIds(GO.db, keys(GO.db, "GO"),
+#                   "ENTREZID", "GO", multiVals = "list")
+# go_vector <- lapply(go_list, as.vector)
+# ezs <- sapply(go_vector, paste0, collapse = ";")
+# go_df <- data.frame(GOID = names(go_vector), ENTREZID = ezs)
+
 ### then map GO terms to genes between tables via ENTREZID
 go_1 <- go_1 %>% dplyr::select(-ENTREZID_in_term)
 go_2 <- go_2 %>% dplyr::select(-ENTREZID_in_term)
