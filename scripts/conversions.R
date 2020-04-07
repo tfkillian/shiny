@@ -63,24 +63,44 @@ dds_df_4 <- dds_df_4 %>% dplyr::select(-neg_log10_padj) %>%
 ## we need to save the results with ENTREZ IDs from now on
 
 ## get all GO IDs, and all ENTREZ IDs associated with each ID
-go_list <- mapIds(org.Hs.eg.db, keys(org.Hs.eg.db, "GO"),
-                  "ENTREZID", "GO", multiVals = "list")
-go_vector <- lapply(go_list, as.vector)
-ezs <- sapply(go_vector, paste0, collapse = ";")
-go_df <- data.frame(GOID = names(go_vector), ENTREZID = ezs)
-
-
-#mapIds(org.Hs.eg.db, Rkeys(org.Hs.egSYMBOL), "GO","SYMBOL", multiVals = getgoterms)
-
-# sym2go <- select(org.Hs.eg.db, "GO", "SYMBOL")
-# go2term <- select(GO.db, sym2go$GO, "TERM", "GOID")
-
-
-# go_list <- mapIds(GO.db, keys(GO.db, "GO"),
+# go_list <- mapIds(org.Hs.eg.db, keys(org.Hs.eg.db, "GO"),
 #                   "ENTREZID", "GO", multiVals = "list")
 # go_vector <- lapply(go_list, as.vector)
 # ezs <- sapply(go_vector, paste0, collapse = ";")
 # go_df <- data.frame(GOID = names(go_vector), ENTREZID = ezs)
+
+## this also misses some genes
+# go_list <- as.list(org.Hs.egGO2ALLEGS)
+# go_vector <- lapply(go_list, as.vector)
+# ezs <- sapply(go_vector, paste0, collapse = ";")
+# go_df <- data.frame(GOID = names(go_vector), ENTREZID = ezs)
+
+## okay, so apparently you should use this method from goana
+obj <- paste0("org.Hs.egGO2ALLEGS")
+orgPkg <- paste0("org.Hs.eg.db")
+egGO2ALLEGS <- getFromNamespace(obj,orgPkg)
+GeneID.PathID <- AnnotationDbi::toTable(egGO2ALLEGS)
+go_set <- GeneID.PathID %>%
+          dplyr::select(go_id, gene_id) %>%
+          dplyr::rename(GOID = go_id)
+
+# go_32501 <- go_set %>% dplyr::filter(GOID == "GO:0032501") 
+# 
+# go_ez <- go_32501 %>%
+#          group_by(GOID) %>%
+#          dplyr::summarise(ENTREZIDs = paste0(gene_id, collapse = ";"))
+# 
+# go_list <- go_set %>%
+#            group_by(GOID) %>%
+#            summarise(ENTREZIDs = paste(gene_id, collapse = ";"))
+
+go_list <- go_set %>%
+    group_by(GOID) %>%
+    unique() %>%
+    summarise(ENTREZID_in_term = paste(gene_id, collapse = ";"))
+    #summarise(ENTREZIDs = paste(gene_id, collapse = ";"), n = dplyr::n())
+
+go_df <- go_list
 
 ### then map GO terms to genes between tables via ENTREZID
 go_1 <- go_1 %>% dplyr::select(-ENTREZID_in_term)
@@ -93,15 +113,15 @@ go_2 <- go_2 %>% dplyr::left_join(go_df, by ="GOID")
 go_3 <- go_3 %>% dplyr::left_join(go_df, by ="GOID")
 go_4 <- go_4 %>% dplyr::left_join(go_df, by ="GOID")
 
-go_1$ENTREZID_in_term <- as.character(go_1$ENTREZID)
-go_2$ENTREZID_in_term <- as.character(go_2$ENTREZID)
-go_3$ENTREZID_in_term <- as.character(go_3$ENTREZID)
-go_4$ENTREZID_in_term <- as.character(go_4$ENTREZID)
+# go_1$ENTREZID_in_term <- as.character(go_1$ENTREZID)
+# go_2$ENTREZID_in_term <- as.character(go_2$ENTREZID)
+# go_3$ENTREZID_in_term <- as.character(go_3$ENTREZID)
+# go_4$ENTREZID_in_term <- as.character(go_4$ENTREZID)
 
-go_1 <- go_1 %>% dplyr::select(-ENTREZID)
-go_2 <- go_2 %>% dplyr::select(-ENTREZID)
-go_3 <- go_3 %>% dplyr::select(-ENTREZID)
-go_4 <- go_4 %>% dplyr::select(-ENTREZID)
+# go_1 <- go_1 %>% dplyr::select(-ENTREZID)
+# go_2 <- go_2 %>% dplyr::select(-ENTREZID)
+# go_3 <- go_3 %>% dplyr::select(-ENTREZID)
+# go_4 <- go_4 %>% dplyr::select(-ENTREZID)
 
 ###################### KEGG conversion ###################################
 # https://www.researchgate.net/post/How_i_can_get_a_list_of_KEGG_pathways_and_its_list_of_genes
