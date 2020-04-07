@@ -79,10 +79,13 @@ dds_df_4 <- dds_df_4 %>% dplyr::select(-neg_log10_padj) %>%
 obj <- paste0("org.Hs.egGO2ALLEGS")
 orgPkg <- paste0("org.Hs.eg.db")
 egGO2ALLEGS <- getFromNamespace(obj,orgPkg)
-GeneID.PathID <- AnnotationDbi::toTable(egGO2ALLEGS)
-go_set <- GeneID.PathID %>%
-          dplyr::select(go_id, gene_id) %>%
-          dplyr::rename(GOID = go_id)
+GeneID_PathID <- AnnotationDbi::toTable(egGO2ALLEGS)
+go_df <- GeneID_PathID %>%
+         dplyr::select(go_id, gene_id) %>%
+         dplyr::rename(GOID = go_id) %>% 
+         group_by(GOID) %>%
+         unique() %>%
+         summarise(ENTREZID_in_term = paste(gene_id, collapse = ";"))
 
 # go_32501 <- go_set %>% dplyr::filter(GOID == "GO:0032501") 
 # 
@@ -93,14 +96,6 @@ go_set <- GeneID.PathID %>%
 # go_list <- go_set %>%
 #            group_by(GOID) %>%
 #            summarise(ENTREZIDs = paste(gene_id, collapse = ";"))
-
-go_list <- go_set %>%
-    group_by(GOID) %>%
-    unique() %>%
-    summarise(ENTREZID_in_term = paste(gene_id, collapse = ";"))
-    #summarise(ENTREZIDs = paste(gene_id, collapse = ";"), n = dplyr::n())
-
-go_df <- go_list
 
 ### then map GO terms to genes between tables via ENTREZID
 go_1 <- go_1 %>% dplyr::select(-ENTREZID_in_term)
@@ -125,16 +120,35 @@ go_4 <- go_4 %>% dplyr::left_join(go_df, by ="GOID")
 
 ###################### KEGG conversion ###################################
 # https://www.researchgate.net/post/How_i_can_get_a_list_of_KEGG_pathways_and_its_list_of_genes
-library("org.Hs.eg.db")
-mapped <- mappedkeys(org.Hs.egPATH2EG)
-L <- as.list(org.Hs.egPATH2EG[mapped])
-Kegg_ID <- names(L)
-Gene_IDs <- sapply(L, paste, collapse = ";")
-kegg_genes <- cbind(Kegg_ID, Gene_IDs)
-kegg_genes <- as.data.frame(kegg_genes)
-names(kegg_genes) <- c("PathwayID", "ENTREZID_in_path")
-rownames(kegg_genes) <- NULL
-path_id_kegg <- kegg_genes
+# obj <- paste0("org.Hs.egPATH2EG")
+# orgPkg <- paste0("org.Hs.eg.db")
+# egPATH2EG <- getFromNamespace(obj,orgPkg)
+# GeneID_KEGGID <- AnnotationDbi::toTable(egPATH2EG)
+
+####################### we need to construct exactly what limma goana does ################################
+library("limma")
+GeneID_PathID <- getGeneKEGGLinks("hsa", convert=FALSE)
+# https://rdrr.io/bioc/limma/src/R/kegga.R
+gene_list <- GeneID_PathID %>%
+    dplyr::select(PathwayID, GeneID) %>%
+    group_by(PathwayID) %>%
+    unique() %>%
+    summarise(ENTREZID_in_path = paste(GeneID, collapse = ";"))
+    
+PathID_PathName <- getKEGGPathwayNames("hsa", remove.qualifier=TRUE)
+path_id_kegg <- dplyr::full_join(PathID_PathName, gene_list, by = "PathwayID")
+names(path_id_kegg) <- c("PathwayID", "Pathway", "ENTREZID_in_path")
+
+# library("org.Hs.eg.db")
+# mapped <- mappedkeys(org.Hs.egPATH2EG)
+# L <- as.list(org.Hs.egPATH2EG[mapped])
+# Kegg_ID <- names(L)
+# Gene_IDs <- sapply(L, paste, collapse = ";")
+# kegg_genes <- cbind(Kegg_ID, Gene_IDs)
+# kegg_genes <- as.data.frame(kegg_genes)
+# names(kegg_genes) <- c("PathwayID", "ENTREZID_in_path")
+# rownames(kegg_genes) <- NULL
+# path_id_kegg <- kegg_genes
 # write.table(cbind(Kegg_ID, Gene_IDs), file="KEGG to Genes.txt", sep="\t", row.names=FALSE, col.names=FALSE)
 
 ### this method seems to provide erroneous ENRTEZIDs 
@@ -155,20 +169,20 @@ path_id_kegg <- kegg_genes
 # kegg_3$PathwayID <- gsub("path:mmu", "", kegg_3$PathwayID)
 # kegg_4$PathwayID <- gsub("path:mmu", "", kegg_4$PathwayID)
 
-kegg_1 <- kegg_1 %>% dplyr::select(-ENTREZID_in_path) # %>% dplyr::select(-PathwayID)
-kegg_2 <- kegg_2 %>% dplyr::select(-ENTREZID_in_path) # %>% dplyr::select(-PathwayID)
-kegg_3 <- kegg_3 %>% dplyr::select(-ENTREZID_in_path) # %>% dplyr::select(-PathwayID)
-kegg_4 <- kegg_4 %>% dplyr::select(-ENTREZID_in_path) # %>% dplyr::select(-PathwayID)
+kegg_1 <- kegg_1 %>% dplyr::select(-ENTREZID_in_path) %>% dplyr::select(-PathwayID)
+kegg_2 <- kegg_2 %>% dplyr::select(-ENTREZID_in_path) %>% dplyr::select(-PathwayID)
+kegg_3 <- kegg_3 %>% dplyr::select(-ENTREZID_in_path) %>% dplyr::select(-PathwayID)
+kegg_4 <- kegg_4 %>% dplyr::select(-ENTREZID_in_path) %>% dplyr::select(-PathwayID)
 
-kegg_1 <- kegg_1 %>% left_join(path_id_kegg, by = "PathwayID")
-kegg_2 <- kegg_2 %>% left_join(path_id_kegg, by = "PathwayID")
-kegg_3 <- kegg_3 %>% left_join(path_id_kegg, by = "PathwayID")
-kegg_4 <- kegg_4 %>% left_join(path_id_kegg, by = "PathwayID")
+kegg_1 <- kegg_1 %>% left_join(path_id_kegg, by = "Pathway")
+kegg_2 <- kegg_2 %>% left_join(path_id_kegg, by = "Pathway")
+kegg_3 <- kegg_3 %>% left_join(path_id_kegg, by = "Pathway")
+kegg_4 <- kegg_4 %>% left_join(path_id_kegg, by = "Pathway")
 
-kegg_1$ENTREZID_in_path <- as.character(kegg_1$ENTREZID_in_path)
-kegg_2$ENTREZID_in_path <- as.character(kegg_2$ENTREZID_in_path)
-kegg_3$ENTREZID_in_path <- as.character(kegg_3$ENTREZID_in_path)
-kegg_4$ENTREZID_in_path <- as.character(kegg_4$ENTREZID_in_path)
+# kegg_1$ENTREZID_in_path <- as.character(kegg_1$ENTREZID_in_path)
+# kegg_2$ENTREZID_in_path <- as.character(kegg_2$ENTREZID_in_path)
+# kegg_3$ENTREZID_in_path <- as.character(kegg_3$ENTREZID_in_path)
+# kegg_4$ENTREZID_in_path <- as.character(kegg_4$ENTREZID_in_path)
 
 # names(kegg_1) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
 # names(kegg_2) <- c("Pathway", "N" , "DE", "P.DE", "PathwayID", "ENTREZID_in_path")
