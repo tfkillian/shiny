@@ -117,6 +117,13 @@ library("ggplot2")
 ## the local path to library and results (if running on a local)
 ## NOTE: the server MUST USE absolute paths NEVER USE relative paths!!!
 
+
+## comparisons ############## make dropdown names automatic?? #####################################
+# comparison_1 <- "Comparison 1"
+# comparison_2 <- "Comparison 2"
+# comparison_3 <- "Comparison 3"
+# comparison_4 <- "Comparison 4"
+
 ## define log2 fold change threshold
 l2FC <- 1
 
@@ -171,8 +178,8 @@ setPaths <- function(x) {
 ################################################################################
 #### if this is running on the server, change these functions to TRUE !!!!! ####
 ### if this is running on a local machine, then set these functions to FALSE ###
-myDirectory <- setPaths(FALSE)
-.libPaths(setLibs(FALSE))
+myDirectory <- setPaths(TRUE)
+.libPaths(setLibs(TRUE))
 ################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
@@ -196,6 +203,10 @@ dds_df_1 <- read_count_matrix(paste0(myDirectory, "res1.rds"))
 dds_df_2 <- read_count_matrix(paste0(myDirectory, "res2.rds"))
 dds_df_3 <- read_count_matrix(paste0(myDirectory, "res3.rds"))
 dds_df_4 <- read_count_matrix(paste0(myDirectory, "res4.rds"))
+
+
+########################### automatically read files #######################################
+## https://stackoverflow.com/questions/5758084/loop-in-r-to-read-many-files
 
 ## saved colData
 col_1 <- readRDS(paste0(myDirectory, "col_4.rds"))
@@ -246,7 +257,6 @@ ui <- shinyUI(fluidPage(## title panel
               titlePanel(paste0("Explore RNAseq Analysis of ", proj_name,
                                 " data with Shiny")),
               mainPanel(tabsetPanel(type = "tabs",
-                          
               ########## first panel ##########
               tabPanel(title = "Description",
               fluidRow(column(width = 12,
@@ -255,7 +265,6 @@ ui <- shinyUI(fluidPage(## title panel
               h4("Experimental groups of selected DE comparison"),
               DT::dataTableOutput("table_1"))
               )))),
-              
               ########## second panel ##########
               tabPanel(title = "PCA",
               fluidRow(column(width = 12,
@@ -265,7 +274,6 @@ ui <- shinyUI(fluidPage(## title panel
               plotOutput("image_1"),
               align = "left")
               )))),
-              
               ########## third panel ##########              
               tabPanel("DE Analysis",
               h4(paste0("Interactive plots illustrating the results of the DESeq2
@@ -303,7 +311,6 @@ ui <- shinyUI(fluidPage(## title panel
               DT::dataTableOutput("table_2"),
               align = "left")
               ))),
-              
               ########## fourth panel ##########
               tabPanel(title = "GO Term Enrichment Analysis",
               fluidRow(column(width = 12,
@@ -319,7 +326,7 @@ ui <- shinyUI(fluidPage(## title panel
                                       "Comparison 2" = "list_2",
                                       "Comparison 3" = "list_3",
                                       "Comparison 4" = "list_4")),
-              # fourth panel row 1
+              ## fourth panel row 1
               fluidRow(column(width = 12,
               # h5("These are all of ENTREZ IDs found on the selected row in GO results"),
               # textOutput("entrez_1"), ## this is the string of ENTREZ IDs on each row clicked in GO results
@@ -339,14 +346,13 @@ ui <- shinyUI(fluidPage(## title panel
               h5("Note: Term = GO term, Ont = ontology that the GO term belongs to (e.g. 'BP', 'CC'
                  and 'MF'), N = number of genes in the GO term, DE = number of genes in the DE set,
                  P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
-              # Button ########################## download button needs to be adjusted !! ########
               br(), br(), br(),
               DT::dataTableOutput("table_3")),
               br(), br(), br(), br(),
               fluidRow(column(width = 12,
               h4("Genes found in significant GO IDs"),
               h5("Download data of genes found in significant GO IDs"),
-              # br(), br(), br(),
+              # Button # br(), br(), br(),
               downloadButton('downloadData1', 'Download data'),
               br(), br(), br(),
               DT::dataTableOutput("table_4")))
@@ -366,7 +372,7 @@ ui <- shinyUI(fluidPage(## title panel
                                       "Comparison 2" = "list_2",
                                       "Comparison 3" = "list_3",
                                       "Comparison 4" = "list_4")),
-              # fifth panel row 1
+              ## fifth panel row 1
               fluidRow(column(width = 12,
               # h5("These are all of ENTREZ IDs found on the selected row in KEGG results"),
               # textOutput("entrez_3"), ## this is the string of ENTREZ IDs on each row clicked in GO results
@@ -383,13 +389,12 @@ ui <- shinyUI(fluidPage(## title panel
               h4("limma::kegga results table"),
               h5("This table displaying results of the KEGG pathway enrichment analysis. Note:
                  specific KEGG pathways can be queried in the search bar."),
-              # Button ############################### download button needs to be adjusted ! #####
               br(), br(), br(),
               DT::dataTableOutput("table_5"),
               br(), br(), br(), br(),
               h4("Genes found in significant KEGG terms"),
               h5("Download data of genes found in significant GO IDs"),
-              # br(), br(), br(),
+              # Button # br(), br(), br(),
               downloadButton('downloadData2', 'Download data'),
               br(), br(), br(),
               DT::dataTableOutput("table_6"))
