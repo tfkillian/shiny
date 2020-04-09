@@ -321,12 +321,12 @@ ui <- shinyUI(fluidPage(## title panel
                                       "Comparison 4" = "list_4")),
               # fourth panel row 1
               fluidRow(column(width = 12,
-              h5("These are all of ENTREZ IDs found on the selected row in GO results"),
-              textOutput("entrez_1"), ## this is the string of ENTREZ IDs on each row clicked in GO results
-              br(),
-              h5("These are all ENTREZ IDs in the DESeq2 results corresponding to above"),
-              textOutput("entrez_2"), ## this is the string of ENTREZ IDs on each row clicked in dds results
-              br(),
+              # h5("These are all of ENTREZ IDs found on the selected row in GO results"),
+              # textOutput("entrez_1"), ## this is the string of ENTREZ IDs on each row clicked in GO results
+              # br(),
+              # h5("These are all ENTREZ IDs in the DESeq2 results corresponding to above"),
+              # textOutput("entrez_2"), ## this is the string of ENTREZ IDs on each row clicked in dds results
+              # br(),
               h4("Volcano Plot"),
               h5(paste0(thresh_vol)),
               plotOutput("plot_graph_4", height = 350))),
@@ -340,22 +340,15 @@ ui <- shinyUI(fluidPage(## title panel
                  and 'MF'), N = number of genes in the GO term, DE = number of genes in the DE set,
                  P.DE = non-adjusted p-value for over-representation of the GO term in the set."),
               # Button ########################## download button needs to be adjusted !! ########
-              br(),
-              br(),
-              br(),
+              br(), br(), br(),
               DT::dataTableOutput("table_3")),
-              br(),
-              br(),
-              br(),
-              br(),
+              br(), br(), br(), br(),
               fluidRow(column(width = 12,
               h4("Genes found in significant GO IDs"),
               h5("Download data of genes found in significant GO IDs"),
               # br(), br(), br(),
               downloadButton('downloadData1', 'Download data'),
-              br(),
-              br(),
-              br(),
+              br(), br(), br(),
               DT::dataTableOutput("table_4")))
               )))),
               ########## fifth panel ##########
@@ -375,39 +368,30 @@ ui <- shinyUI(fluidPage(## title panel
                                       "Comparison 4" = "list_4")),
               # fifth panel row 1
               fluidRow(column(width = 12,
-              h5("These are all of ENTREZ IDs found on the selected row in KEGG results"),
-              textOutput("entrez_3"), ## this is the string of ENTREZ IDs on each row clicked in GO results
-              br(),
-              h5("These are all ENTREZ IDs in the DESeq2 results corresponding to above"),
-              textOutput("entrez_4"), ## this is the string of ENTREZ IDs on each row clicked in dds results
-              br(),
+              # h5("These are all of ENTREZ IDs found on the selected row in KEGG results"),
+              # textOutput("entrez_3"), ## this is the string of ENTREZ IDs on each row clicked in GO results
+              # br(),
+              # h5("These are all ENTREZ IDs in the DESeq2 results corresponding to above"),
+              # textOutput("entrez_4"), ## this is the string of ENTREZ IDs on each row clicked in dds results
+              # br(),
               h4("Volcano Plot"),
               h5(paste0(thresh_vol)),
               plotOutput("plot_graph_5", height = 350))),
-              br(),
-              br(),
-              br(),
+              br(), br(), br(),
               ## fifth panel row 2
               fluidRow(column(width = 12,
               h4("limma::kegga results table"),
               h5("This table displaying results of the KEGG pathway enrichment analysis. Note:
                  specific KEGG pathways can be queried in the search bar."),
               # Button ############################### download button needs to be adjusted ! #####
-              br(),
-              br(),
-              br(),
+              br(), br(), br(),
               DT::dataTableOutput("table_5"),
-              br(),
-              br(),
-              br(),
-              br(),
+              br(), br(), br(), br(),
               h4("Genes found in significant KEGG terms"),
               h5("Download data of genes found in significant GO IDs"),
               # br(), br(), br(),
               downloadButton('downloadData2', 'Download data'),
-              br(),
-              br(),
-              br(),
+              br(), br(), br(),
               DT::dataTableOutput("table_6"))
               )))
               )))
@@ -569,8 +553,10 @@ server <- function(input, output) {
     
     output$plot_graph_2 <- renderPlot({ 
         res_df <- as.data.frame(selected_df1()[[1]], na.rm = TRUE)
-        res_df$threshold <- as.factor(abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
-        vol <- ggplot(data = res_df, aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
+        res_df$threshold <- as.factor(
+            abs(res_df$log2FoldChange) > l2FC & res_df$padj < thresh_padj)
+        vol <- ggplot(data = res_df,
+                      aes(x = log2FoldChange, y = neg_log10_padj, color = threshold)) +
                geom_point(size = 0.5) +
                geom_point(data = selected_df1()[[1]][click_value_1(), ],
                           colour = "blue", alpha = 0.4, size = 5) +
@@ -612,7 +598,14 @@ server <- function(input, output) {
     output$image_1 <- renderImage({
         filename <- file.path(pca_1)
         list(src = filename, width = 800, height = 800)
-    }, deleteFile = FALSE) 
+    }, deleteFile = FALSE)
+    
+    ## if multiple PCAs need to be displayed via a dropdown, this can be used
+    # image_1 <- reactive(get(input$pca))
+    # output$image_1 <- renderImage({
+    #     filename <- file.path(input_2())
+    #     list(src = filename, width = 800, height = 800)
+    # }, deleteFile = FALSE)    
     
 ####################### Generate datatable DE results ##########################
 ## this table is generated from the dataset selected from dropdown, showing
@@ -646,7 +639,8 @@ server <- function(input, output) {
     
     ## reactive variable that generates a table of the of ENTREZIDs in the DESeq2
     ## results table that correspond to a clicked row of the GO result table
-    output$table_4 <- DT::renderDataTable((selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% input_5(), ]))
+    output$table_4 <- DT::renderDataTable(
+        (selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% input_5(), ]))
     
     ## reactive variable that generates a downloadable .csv file of the table of
     ## the of ENTREZIDs in the DESeq2 results table that correspond to a clicked
@@ -654,10 +648,10 @@ server <- function(input, output) {
     download_1 <- reactive((selected_df2()[[1]][selected_df2()[[1]]$ENTREZID %in% input_5(), ]))
     
     #### text output of ENTREZIDs from selected results corresponding to GO clicked ######
-    output$entrez_1 <- reactive(input_5())
+    # output$entrez_1 <- reactive(input_5())
     
     #### text output of ENTREZIDs from selected results corresponding to GO clicked ######
-    output$entrez_2 <- reactive(download_1() %>% dplyr::select(ENTREZID) %>% toString())
+    # output$entrez_2 <- reactive(download_1() %>% dplyr::select(ENTREZID) %>% toString())
     
 ############################### GO Volcano plot ################################
 ## This Volcano plot is generated automatically from dataset selected from the
@@ -692,12 +686,12 @@ server <- function(input, output) {
     ## reactive variable that captures string of ENTREZIDs of the KEGG result table
     ## and finds which of these ENTREZIDs are in the DESeq2 results table
     input_7 <- reactive(selected_df3()[[3]][click_value_3(), ]$ENTREZID_in_path %>%
-                        strsplit(";") %>% unlist() %>% na.exclude()
-                        )
+                        strsplit(";") %>% unlist() %>% na.exclude())
     
     ## reactive variable that generates a table of the of ENTREZIDs in the DESeq2
     ## results table that correspond to a clicked row of the KEGG result table
-    output$table_6 <- DT::renderDataTable((selected_df3()[[1]][selected_df3()[[1]]$ENTREZID %in% input_7(), ]))
+    output$table_6 <- DT::renderDataTable((
+        selected_df3()[[1]][selected_df3()[[1]]$ENTREZID %in% input_7(), ]))
     
     ## reactive variable that generates a downloadable .csv file of the table of
     ## the of ENTREZIDs in the DESeq2 results table that correspond to a clicked
@@ -706,11 +700,11 @@ server <- function(input, output) {
     
     #### text output of ENTREZIDs from selected results corresponding to KEGG
     ## pathway clicked ######
-    output$entrez_3 <- reactive(input_7())
+    # output$entrez_3 <- reactive(input_7())
     
     #### text output of ENTREZIDs from selected results corresponding to KEGG
     ## pathwayclicked ######
-    output$entrez_4 <- reactive(download_2() %>% dplyr::select(ENTREZID) %>% toString())
+    # output$entrez_4 <- reactive(download_2() %>% dplyr::select(ENTREZID) %>% toString())
     
 ############################# KEGG Volcano plot ################################
 ## This Volcano plot is generated automatically from dataset selected from the
