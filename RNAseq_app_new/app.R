@@ -124,6 +124,9 @@ library("ggplot2")
 # comparison_3 <- "Comparison 3"
 # comparison_4 <- "Comparison 4"
 
+
+## automatically read file names
+
 ## define log2 fold change threshold
 l2FC <- 1
 
@@ -178,8 +181,8 @@ setPaths <- function(x) {
 ################################################################################
 #### if this is running on the server, change these functions to TRUE !!!!! ####
 ### if this is running on a local machine, then set these functions to FALSE ###
-myDirectory <- setPaths(TRUE)
-.libPaths(setLibs(TRUE))
+myDirectory <- setPaths(FALSE)
+.libPaths(setLibs(FALSE))
 ################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
