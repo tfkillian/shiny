@@ -9,9 +9,9 @@ are described below:
     plots are, MA plot, Volcano plot and a count plot, which is dynamically
     plotted by user click input. There is also an html table displaying the
     results of the analysis which can be queried, and interacts with the display
-    plots above. An advanced version of this app allows gene ontology terms to be
-    selected, which genes relating to that GO terms and KEGG pathways appears in corresponding
-    volcano plots.
+    plots above. An advanced version of this app displays additional tabs of 
+    GO terms and KEGG pathways to be selected, and which genes relating to those
+    GO terms and KEGG pathways appears in corresponding volcano plots.
 
 -   Proteomic viewer
     This type of app displays 2 interactive plots from a proteomic mass spectrometry analysis. These
