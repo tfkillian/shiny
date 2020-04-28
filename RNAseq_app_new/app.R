@@ -207,9 +207,26 @@ dds_df_2 <- read_count_matrix(paste0(myDirectory, "res2.rds"))
 dds_df_3 <- read_count_matrix(paste0(myDirectory, "res3.rds"))
 dds_df_4 <- read_count_matrix(paste0(myDirectory, "res4.rds"))
 
+########################### automatically read files ###########################
+## this function automatically read files
+#temp_0 <- list.files(myDirectory, pattern = "*.rds", full.names = TRUE)
 
-########################### automatically read files #######################################
-## https://stackoverflow.com/questions/5758084/loop-in-r-to-read-many-files
+## number of comparisons to be displayed
+# num_of_comps <- 4
+
+# for (i in 1:num_of_comps) {
+# 
+#     temp_[i] <- list.files(myDirectory, pattern = "*[i].rds", full.names = TRUE)
+#     DEL_[i] <- grep('app.R|dds_df*|col*|PCA', temp_i)
+#     temp_[i]D <- as.list(temp_i[-DEL_i])
+#     list_[i] <- lapply(temp_iD, readRDS)
+#     
+# }
+
+# temp_1 <- list.files(myDirectory, pattern = "*1.rds", full.names = TRUE)
+# DEL_1 <- grep('app.R|dds_df*|col*|PCA', temp_1)
+# temp_1D <- as.list(temp_1[-DEL_1])
+# list_1 <- lapply(temp_1D, readRDS)
 
 ## saved colData
 col_1 <- readRDS(paste0(myDirectory, "col_4.rds"))
@@ -221,7 +238,7 @@ pca_1 <- (paste0(myDirectory, "PCA4.png"))
 ## NOTE: in order for the dynamic GO and KEGG tables to work, the results MUST
 ## have ENTREZ IDs as a column in each results dataframe!!!
 
-########################################################################## FIX HERE! ############
+################################################################################
 ## GO and KEGG need to be arranged by %>% arrange(P.ADJ.DE)
 ## need to calculate P.ADJ.DE for these files.
 
