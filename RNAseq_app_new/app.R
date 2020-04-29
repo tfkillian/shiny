@@ -208,25 +208,19 @@ dds_df_3 <- read_count_matrix(paste0(myDirectory, "res3.rds"))
 dds_df_4 <- read_count_matrix(paste0(myDirectory, "res4.rds"))
 
 ########################### automatically read files ###########################
-## this function automatically read files
-#temp_0 <- list.files(myDirectory, pattern = "*.rds", full.names = TRUE)
+## this function automatically reads files in the specified directory, creating
+## lists like so: list_1 <- list(dds_df_1, go_1, kegg_1) 
 
-## number of comparisons to be displayed
-# num_of_comps <- 4
-
-# for (i in 1:num_of_comps) {
-# 
-#     temp_[i] <- list.files(myDirectory, pattern = "*[i].rds", full.names = TRUE)
-#     DEL_[i] <- grep('app.R|dds_df*|col*|PCA', temp_i)
-#     temp_[i]D <- as.list(temp_i[-DEL_i])
-#     list_[i] <- lapply(temp_iD, readRDS)
-#     
-# }
-
-# temp_1 <- list.files(myDirectory, pattern = "*1.rds", full.names = TRUE)
-# DEL_1 <- grep('app.R|dds_df*|col*|PCA', temp_1)
-# temp_1D <- as.list(temp_1[-DEL_1])
-# list_1 <- lapply(temp_1D, readRDS)
+# expNames <- 1:4 ## select number of comparions
+# fileList <- lapply(expNames, function(i){
+#     temp_i <- list.files(myDirectory,
+#                          pattern = paste0("*", i, ".rds$"), full.names = TRUE)
+#     DEL_i <- grep('app.R|dds_df*|col*|PCA', temp_i) ## grep wrong files
+#     temp_iD <- as.list(temp_i[-DEL_i]) ## remove wrong files
+#     lapply(temp_iD, readRDS %>% as_tibble()) ## read as tibbles
+# })
+# names(fileList) <- paste0("list_", expNames)
+# list2env(fileList, envir = environment())
 
 ## saved colData
 col_1 <- readRDS(paste0(myDirectory, "col_4.rds"))
