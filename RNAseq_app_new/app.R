@@ -15,14 +15,31 @@
 ##' determined by user click input. The plots and table shown in the user
 ##' interface are updated automatically with new user input.
 ##' 
-##' The fourth tab displays results of the Gene Set Enrichment Analysis (GSEA)
+##' The fourth tab displays results of the GO term Enrichment Analysis
+##' in an html table.
+##' 
+##' The fifth tab displays results of the KEGG pathway Enrichment Analysis
 ##' in an html table.
 ##'
 ##' @title Interactive Shiny Omics Analysis Explorer
 ##' 
 ##' @author Theo Killian
+##'
+##' NOTE: the app expects results in the following format:
+##' de_res_*.rds
+##' go_*.rds
+##' kegg_*.rds
+##'
+##' The de_res_*.rds files must have a neg_log10_padj column, which is
+##' calculated from -log10(padj)
 ##' 
-##' The following variables *must be updated* when changing input files
+##' The go_*.rds files are expected to have a "ENTREZID_in_tern" column, with a
+##' string of ";" separated ENTREZIDs for each GO term
+##' 
+##' The kegg_*.rds file expected to have a "ENTREZID_in_path" column, with a
+##' string of ";" separated ENTREZIDs for each KEGG pathway
+##'
+##'The following variables *must be updated* when changing input files
 ##'
 ##' @param dds_df_1 a tibble of an RNAseq DESeq2 analysis with normalized counts
 ##' 
@@ -117,13 +134,11 @@ library("ggplot2")
 ## the local path to library and results (if running on a local)
 ## NOTE: the server MUST USE absolute paths NEVER USE relative paths!!!
 
-
 ## comparisons ############## make dropdown names automatic?? #####################################
 # comparison_1 <- "Comparison 1"
 # comparison_2 <- "Comparison 2"
 # comparison_3 <- "Comparison 3"
 # comparison_4 <- "Comparison 4"
-
 
 ## automatically read file names
 
@@ -194,33 +209,33 @@ myDirectory <- setPaths(FALSE)
 ## the columns of the normalized counts must have some similar characters
 ## Example: df <- read_count_matrix(paste0(myDirectory, "results_file.rds"))
 
-read_count_matrix <- function(dds_df) {
-        dds_df <- readRDS(dds_df) %>% as_tibble() %>% 
-        mutate(neg_log10_padj = -log10(padj))
-        return(dds_df)
-}
+# read_count_matrix <- function(dds_df) {
+#         dds_df <- readRDS(dds_df) %>% as_tibble() %>%
+#         mutate(neg_log10_padj = -log10(padj))
+#         return(dds_df)
+# }
 
 ## files to be read which need to correspond to your experimental comparisons ##
 ## big results file (res object + normalized counts)
-dds_df_1 <- read_count_matrix(paste0(myDirectory, "res1.rds"))
-dds_df_2 <- read_count_matrix(paste0(myDirectory, "res2.rds"))
-dds_df_3 <- read_count_matrix(paste0(myDirectory, "res3.rds"))
-dds_df_4 <- read_count_matrix(paste0(myDirectory, "res4.rds"))
+# dds_df_1 <- read_count_matrix(paste0(myDirectory, "de_res_1.rds"))
+# dds_df_2 <- read_count_matrix(paste0(myDirectory, "de_res_2.rds"))
+# dds_df_3 <- read_count_matrix(paste0(myDirectory, "de_res_3.rds"))
+# dds_df_4 <- read_count_matrix(paste0(myDirectory, "de_res_4.rds"))
 
 ########################### automatically read files ###########################
 ## this function automatically reads files in the specified directory, creating
 ## lists like so: list_1 <- list(dds_df_1, go_1, kegg_1) 
 
-# expNames <- 1:4 ## select number of comparions
-# fileList <- lapply(expNames, function(i){
-#     temp_i <- list.files(myDirectory,
-#                          pattern = paste0("*", i, ".rds$"), full.names = TRUE)
-#     DEL_i <- grep('app.R|dds_df*|col*|PCA', temp_i) ## grep wrong files
-#     temp_iD <- as.list(temp_i[-DEL_i]) ## remove wrong files
-#     lapply(temp_iD, readRDS %>% as_tibble()) ## read as tibbles
-# })
-# names(fileList) <- paste0("list_", expNames)
-# list2env(fileList, envir = environment())
+expNames <- 1:4 ## select number of comparions
+fileList <- lapply(expNames, function(i){
+    temp_i <- list.files(myDirectory,
+                         pattern = paste0("*", i, ".rds$"), full.names = TRUE)
+    DEL_i <- grep('app.R|dds_df*|col*|PCA', temp_i) ## grep wrong files
+    temp_iD <- as.list(temp_i[-DEL_i]) ## remove wrong files
+    lapply(temp_iD, readRDS) ## read as tibbles
+})
+names(fileList) <- paste0("list_", expNames)
+list2env(fileList, envir = environment())
 
 ## saved colData
 col_1 <- readRDS(paste0(myDirectory, "col_4.rds"))
@@ -237,16 +252,16 @@ pca_1 <- (paste0(myDirectory, "PCA4.png"))
 ## need to calculate P.ADJ.DE for these files.
 
 ## saved limma::goana GO results
-go_1 <- readRDS(paste0(myDirectory, "go_1.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
-go_2 <- readRDS(paste0(myDirectory, "go_2.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
-go_3 <- readRDS(paste0(myDirectory, "go_3.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
-go_4 <- readRDS(paste0(myDirectory, "go_4.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
-
-## saved limma::kegga GO results
-kegg_1 <- readRDS(paste0(myDirectory, "kegg_1.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
-kegg_2 <- readRDS(paste0(myDirectory, "kegg_2.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
-kegg_3 <- readRDS(paste0(myDirectory, "kegg_3.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
-kegg_4 <- readRDS(paste0(myDirectory, "kegg_4.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+# go_1 <- readRDS(paste0(myDirectory, "go_1.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+# go_2 <- readRDS(paste0(myDirectory, "go_2.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+# go_3 <- readRDS(paste0(myDirectory, "go_3.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+# go_4 <- readRDS(paste0(myDirectory, "go_4.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+# 
+# ## saved limma::kegga GO results
+# kegg_1 <- readRDS(paste0(myDirectory, "kegg_1.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+# kegg_2 <- readRDS(paste0(myDirectory, "kegg_2.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+# kegg_3 <- readRDS(paste0(myDirectory, "kegg_3.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
+# kegg_4 <- readRDS(paste0(myDirectory, "kegg_4.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
 
 ###################### link results files as lists #############################
 ## to "link" all results dataframes so that they can be selected and appear
@@ -255,10 +270,10 @@ kegg_4 <- readRDS(paste0(myDirectory, "kegg_4.rds")) %>% arrange(P.DE) # %>% arr
 ## selected by the dropdown menu and then the dataframe objects are what are
 ## passed to their respective plots and tables
 
-list_1 <- list(dds_df_1, go_1, kegg_1)
-list_2 <- list(dds_df_2, go_2, kegg_2)
-list_3 <- list(dds_df_3, go_3, kegg_3)
-list_4 <- list(dds_df_4, go_4, kegg_4)
+# list_1 <- list(dds_df_1, go_1, kegg_1)
+# list_2 <- list(dds_df_2, go_2, kegg_2)
+# list_3 <- list(dds_df_3, go_3, kegg_3)
+# list_4 <- list(dds_df_4, go_4, kegg_4)
 
 ############################ user interface ###################################
 # This function defines the Shiny UI. New tabs can be added with tabPanel() and
