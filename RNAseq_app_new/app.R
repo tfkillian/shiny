@@ -41,7 +41,7 @@
 ##'
 ##'The following variables *must be updated* when changing input files
 ##'
-##' @param dds_df_1 a tibble of an RNAseq DESeq2 analysis with normalized counts
+##' @param de_res_1 a tibble of an RNAseq DESeq2 analysis with normalized counts
 ##' 
 ##' @param "dds_df_1" a string corresponding to the name of the .rds file above
 ##' 
@@ -56,6 +56,10 @@
 ##' @param go_1 a dataframe of the GO enrichment of an RNAseq DESeq2 analysis
 ##' 
 ##' @param "go_1" a string corresponding to the name of the .rds file above
+##' 
+##' @param kegg_1 a dataframe of the KEGG enrichment of an RNAseq DESeq2 analysis
+##' 
+##' @param "kegg_1" a string corresponding to the name of the .rds file above
 ##' 
 ##' @param serv_lib path to R libaries on the server
 ##' 
@@ -134,13 +138,8 @@ library("ggplot2")
 ## the local path to library and results (if running on a local)
 ## NOTE: the server MUST USE absolute paths NEVER USE relative paths!!!
 
-## comparisons ############## make dropdown names automatic?? #####################################
-# comparison_1 <- "Comparison 1"
-# comparison_2 <- "Comparison 2"
-# comparison_3 <- "Comparison 3"
-# comparison_4 <- "Comparison 4"
-
-## automatically read file names
+## specify number of comparions
+expNames <- 1:4 ## this means that there are 4 comparions
 
 ## define log2 fold change threshold
 l2FC <- 1
@@ -193,12 +192,11 @@ setPaths <- function(x) {
     return(my_directory)
 }
 
-################################################################################
+######################### running on server or local? ##########################
 #### if this is running on the server, change these functions to TRUE !!!!! ####
 ### if this is running on a local machine, then set these functions to FALSE ###
 myDirectory <- setPaths(FALSE)
 .libPaths(setLibs(FALSE))
-################################################################################
 
 ####### Load results of DEseq2 analysis to be displayed in Shiny app ###########
 ## The function read_count_matrix() returns a count matrix dataframe with a new
@@ -224,18 +222,18 @@ myDirectory <- setPaths(FALSE)
 
 ########################### automatically read files ###########################
 ## this function automatically reads files in the specified directory, creating
-## lists like so: list_1 <- list(dds_df_1, go_1, kegg_1) 
+## lists like so: list_1 <- list(de_res_1, go_1, kegg_1) 
 
-expNames <- 1:4 ## select number of comparions
+# expNames <- 1:4 ## select number of comparions
 fileList <- lapply(expNames, function(i){
     temp_i <- list.files(myDirectory,
                          pattern = paste0("*", i, ".rds$"), full.names = TRUE)
     DEL_i <- grep('app.R|dds_df*|col*|PCA', temp_i) ## grep wrong files
-    temp_iD <- as.list(temp_i[-DEL_i]) ## remove wrong files
-    lapply(temp_iD, readRDS) ## read as tibbles
+    temp_iD <- as.list(temp_i[-DEL_i]) ## remove wrong files from temp
+    lapply(temp_iD, readRDS) ## read files as a list
 })
 names(fileList) <- paste0("list_", expNames)
-list2env(fileList, envir = environment())
+list2env(fileList, envir = environment()) ## read list files into environment
 
 ## saved colData
 col_1 <- readRDS(paste0(myDirectory, "col_4.rds"))
@@ -245,19 +243,16 @@ col_1 <- readRDS(paste0(myDirectory, "col_4.rds"))
 pca_1 <- (paste0(myDirectory, "PCA4.png"))
 
 ## NOTE: in order for the dynamic GO and KEGG tables to work, the results MUST
-## have ENTREZ IDs as a column in each results dataframe!!!
-
-################################################################################
-## GO and KEGG need to be arranged by %>% arrange(P.ADJ.DE)
-## need to calculate P.ADJ.DE for these files.
+## have ENTREZ IDs as a column in each results dataframe! GO and KEGG also need
+## to be arranged by %>% arrange(P.ADJ.DE) need to calculate P.ADJ.DE for these files.
 
 ## saved limma::goana GO results
 # go_1 <- readRDS(paste0(myDirectory, "go_1.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
 # go_2 <- readRDS(paste0(myDirectory, "go_2.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
 # go_3 <- readRDS(paste0(myDirectory, "go_3.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
 # go_4 <- readRDS(paste0(myDirectory, "go_4.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
-# 
-# ## saved limma::kegga GO results
+
+## saved limma::kegga GO results
 # kegg_1 <- readRDS(paste0(myDirectory, "kegg_1.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
 # kegg_2 <- readRDS(paste0(myDirectory, "kegg_2.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
 # kegg_3 <- readRDS(paste0(myDirectory, "kegg_3.rds")) %>% arrange(P.DE) # %>% arrange(P.ADJ.DE)
@@ -275,12 +270,12 @@ pca_1 <- (paste0(myDirectory, "PCA4.png"))
 # list_3 <- list(dds_df_3, go_3, kegg_3)
 # list_4 <- list(dds_df_4, go_4, kegg_4)
 
-############################ user interface ###################################
-# This function defines the Shiny UI. New tabs can be added with tabPanel() and
-# new rows can be added with flowRow() within the tabs and new columns can be
-# added within the within rows with column(). The string that appearing in the
-# drop down menu and can be changed to the name of whatever comparison is
-# required, however "list_1" etc should not change
+############################ user interface ####################################
+## This function defines the Shiny UI. New tabs can be added with tabPanel() and
+## new rows can be added with flowRow() within the tabs and new columns can be
+## added within the within rows with column(). The string that appearing in the
+## drop down menu and can be changed to the name of whatever comparison is
+## required, however "list_1" etc should not change
 
 ui <- shinyUI(fluidPage(## title panel
               titlePanel(paste0("Explore RNAseq Analysis of ", proj_name,
