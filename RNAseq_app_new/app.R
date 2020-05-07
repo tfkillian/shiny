@@ -131,7 +131,7 @@ library("dplyr")
 library("tidyr")
 library("ggplot2")
 
-####################### set current directory variables ########################
+############################ set variables #####################################
 ## The functions below streamline the variables that you must change between
 ## running the app on local, and running the app on the cluster. You must update
 ## the `my_directory` path on the server every time you start a new project, and
